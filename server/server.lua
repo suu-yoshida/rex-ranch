@@ -25,14 +25,37 @@ end
 -- Spawn Management System
 ---------------------------------------------
 local SpawnController = {
-    activeSpawns = {},      -- [animalId] = {playerId, spawnTime}
+    activeSpawns = {},      -- [animalId] = {players, spawnTime, networkId, pos}
     spawnRequests = {},     -- Track pending spawn requests
+    networkIds = {},        -- [animalId] = networkId for tracking networked entities
     config = {
         maxSpawnsPerPlayer = 10,    -- Max animals a single player can have spawned
         spawnTimeout = 30000,       -- Timeout for spawn requests (30s)
-        cleanupInterval = 60000     -- Cleanup interval (1 minute)
+        cleanupInterval = 60000,    -- Cleanup interval (1 minute)
+        broadcastRadius = 150.0     -- Radius to broadcast spawns to nearby players
     }
 }
+
+---------------------------------------------
+-- Helper function to get nearby players
+---------------------------------------------
+local function GetNearbyPlayers(coords, radius)
+    local nearbyPlayers = {}
+    local players = GetPlayers()
+    
+    for _, playerId in ipairs(players) do
+        local ped = GetPlayerPed(tonumber(playerId))
+        if DoesEntityExist(ped) then
+            local playerCoords = GetEntityCoords(ped)
+            local distance = #(playerCoords - coords)
+            if distance <= radius then
+                table.insert(nearbyPlayers, tonumber(playerId))
+            end
+        end
+    end
+    
+    return nearbyPlayers
+end
 
 ---------------------------------------------
 -- Initialize spawn controller
@@ -145,26 +168,33 @@ end
 ---------------------------------------------
 -- Register an animal spawn
 ---------------------------------------------
-function SpawnController:RegisterSpawn(playerId, animalId, animalData)
+function SpawnController:RegisterSpawn(playerId, animalId, animalData, networkId)
     if not self.activeSpawns[animalId] then
         self.activeSpawns[animalId] = {
             players = {},
             spawnTime = os.time(),
             pos_x = animalData.pos_x,
             pos_y = animalData.pos_y,
-            pos_z = animalData.pos_z
+            pos_z = animalData.pos_z,
+            networkId = networkId or nil
         }
     end
     
     -- Add this player to the list of players who have spawned this animal
     self.activeSpawns[animalId].players[playerId] = true
     
+    -- Update network ID if provided
+    if networkId then
+        self.activeSpawns[animalId].networkId = networkId
+        self.networkIds[animalId] = networkId
+    end
+    
     if Config.Debug then
         local playerCount = 0
         for _ in pairs(self.activeSpawns[animalId].players) do
             playerCount = playerCount + 1
         end
-        print('^2[SPAWN CONTROLLER]^7 Registered spawn - Player: ' .. playerId .. ', Animal: ' .. animalId .. ' (Total players: ' .. playerCount .. ')')
+        print('^2[SPAWN CONTROLLER]^7 Registered spawn - Player: ' .. playerId .. ', Animal: ' .. animalId .. ' (Total players: ' .. playerCount .. ', netId: ' .. tostring(networkId or 'none') .. ')')
     end
 end
 
@@ -177,6 +207,7 @@ function SpawnController:UnregisterSpawn(animalId)
             print('^3[SPAWN CONTROLLER]^7 Unregistered spawn - Animal: ' .. animalId)
         end
         self.activeSpawns[animalId] = nil
+        self.networkIds[animalId] = nil
     end
 end
 
@@ -423,12 +454,68 @@ RegisterNetEvent('rex-ranch:server:requestAnimalSpawn', function(animalId, anima
         return
     end
     
-    -- Register the spawn and grant permission
-    SpawnController:RegisterSpawn(src, animalId, animalData)
-    TriggerClientEvent('rex-ranch:client:spawnAnimalGranted', src, animalId, animalData)
+    -- Check if this animal already has a network ID (spawned by another player)
+    local existingNetworkId = SpawnController.activeSpawns[animalId] and SpawnController.activeSpawns[animalId].networkId
     
-    if Config.Debug then
-        print('^2[SPAWN CONTROLLER]^7 Granted spawn permission for animal ' .. animalId .. ' to player ' .. src)
+    -- Register the spawn
+    SpawnController:RegisterSpawn(src, animalId, animalData, existingNetworkId)
+    
+    if existingNetworkId then
+        -- Entity already exists, just tell this player to use it
+        TriggerClientEvent('rex-ranch:client:spawnAnimalGranted', src, animalId, animalData, existingNetworkId)
+        if Config.Debug then
+            print('^2[SPAWN CONTROLLER]^7 Player ' .. src .. ' using existing entity for animal ' .. animalId .. ' (netId: ' .. existingNetworkId .. ')')
+        end
+    else
+        -- No entity exists yet - only requesting player creates it
+        -- isCreator = true means this client should create the networked entity
+        TriggerClientEvent('rex-ranch:client:spawnAnimalGranted', src, animalId, animalData, nil, true)
+        
+        if Config.Debug then
+            print('^2[SPAWN CONTROLLER]^7 Player ' .. src .. ' granted creation rights for animal ' .. animalId)
+        end
+    end
+end)
+
+-- Handle network ID registration from clients (when a client creates a networked entity)
+RegisterNetEvent('rex-ranch:server:registerAnimalNetworkId', function(animalId, networkId)
+    local src = source
+    
+    if not networkId or networkId <= 0 then
+        if Config.Debug then
+            print('^1[SPAWN CONTROLLER]^7 Invalid network ID received for animal ' .. animalId)
+        end
+        return
+    end
+    
+    -- Update the spawn data with the network ID
+    if SpawnController.activeSpawns[animalId] then
+        SpawnController.activeSpawns[animalId].networkId = networkId
+        SpawnController.networkIds[animalId] = networkId
+        
+        if Config.Debug then
+            print('^2[SPAWN CONTROLLER]^7 Registered network ID ' .. networkId .. ' for animal ' .. animalId .. ' from player ' .. src)
+        end
+        
+        -- Broadcast the network ID to other nearby players so they can sync
+        local spawnData = SpawnController.activeSpawns[animalId]
+        if spawnData.pos_x and spawnData.pos_y and spawnData.pos_z then
+            local animalCoords = vector3(spawnData.pos_x, spawnData.pos_y, spawnData.pos_z)
+            local nearbyPlayers = GetNearbyPlayers(animalCoords, SpawnController.config.broadcastRadius)
+            
+            for _, playerId in ipairs(nearbyPlayers) do
+                if playerId ~= src then
+                    -- Get animal data from the spawn
+                    local animalData = {
+                        pos_x = spawnData.pos_x,
+                        pos_y = spawnData.pos_y,
+                        pos_z = spawnData.pos_z,
+                        model = spawnData.model
+                    }
+                    TriggerClientEvent('rex-ranch:client:spawnAnimalGranted', playerId, animalId, animalData, networkId)
+                end
+            end
+        end
     end
 end)
 

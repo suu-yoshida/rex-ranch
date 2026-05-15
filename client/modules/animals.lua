@@ -140,7 +140,7 @@ function SpawnManager:RequestSpawn(animalId, animalData)
 end
 
 -- Spawn an animal entity
-function SpawnManager:SpawnAnimal(animalId, animalData)
+function SpawnManager:SpawnAnimal(animalId, animalData, networkId, isCreator)
     -- Check if animal already exists
     if self.entities[animalId] then
         local existingEntity = self.entities[animalId].entity
@@ -159,7 +159,75 @@ function SpawnManager:SpawnAnimal(animalId, animalData)
         end
     end
     
-    local entity = self:CreateAnimalEntity(animalData)
+    -- If we have a networkId but are not the creator, wait for the entity to sync
+    if networkId and not isCreator then
+        -- Try to get the existing networked entity
+        local entity = NetworkGetEntityFromNetworkId(networkId)
+        if DoesEntityExist(entity) then
+            if Config.Debug then
+                print('^2[SPAWN MANAGER]^7 Using synced networked entity ' .. entity .. ' for animal ' .. animalId .. ' (netId: ' .. networkId .. ')')
+            end
+            self:ConfigureAnimalEntity(entity, animalData)
+            self.entities[animalId] = {
+                entity = entity,
+                data = animalData,
+                spawnTime = GetGameTimer(),
+                networkId = networkId
+            }
+            self.pending[animalId] = nil
+            self:SetupAnimalInteraction(entity, animalData)
+            if Config.AnimalWanderingEnabled then
+                self:SetupAnimalWandering(animalId, entity, animalData)
+            end
+            return true
+        end
+        
+        -- Entity doesn't exist yet, wait a bit and retry
+        if Config.Debug then
+            print('^3[SPAWN MANAGER]^7 Waiting for networked entity to sync for animal ' .. animalId .. ' (netId: ' .. networkId .. ')')
+        end
+        CreateThread(function()
+            for i = 1, 10 do
+                Wait(500)
+                local entity = NetworkGetEntityFromNetworkId(networkId)
+                if DoesEntityExist(entity) then
+                    if Config.Debug then
+                        print('^2[SPAWN MANAGER]^7 Synced networked entity ' .. entity .. ' for animal ' .. animalId .. ' after ' .. (i * 500) .. 'ms')
+                    end
+                    self:ConfigureAnimalEntity(entity, animalData)
+                    self.entities[animalId] = {
+                        entity = entity,
+                        data = animalData,
+                        spawnTime = GetGameTimer(),
+                        networkId = networkId
+                    }
+                    self.pending[animalId] = nil
+                    self:SetupAnimalInteraction(entity, animalData)
+                    if Config.AnimalWanderingEnabled then
+                        self:SetupAnimalWandering(animalId, entity, animalData)
+                    end
+                    return
+                end
+            end
+            -- Timed out
+            if Config.Debug then
+                print('^1[SPAWN MANAGER]^7 Timed out waiting for networked entity for animal ' .. animalId)
+            end
+            self.pending[animalId] = nil
+        end)
+        return true
+    end
+    
+    -- Only create if we are the creator
+    if not isCreator then
+        if Config.Debug then
+            print('^3[SPAWN MANAGER]^7 Not creator and no networkId, cannot spawn animal ' .. animalId)
+        end
+        self.pending[animalId] = nil
+        return false
+    end
+    
+    local entity, newNetworkId = self:CreateAnimalEntity(animalData, nil)
     if not entity then
         if Config.Debug then
             print('^1[SPAWN MANAGER]^7 Failed to create entity for animal ' .. animalId)
@@ -168,18 +236,23 @@ function SpawnManager:SpawnAnimal(animalId, animalData)
         return false
     end
     
-    -- Store entity with metadata
+    -- Store entity with metadata including network ID
     self.entities[animalId] = {
         entity = entity,
         data = animalData,
-        spawnTime = GetGameTimer()
-        -- No networkId - animals are client-side only
+        spawnTime = GetGameTimer(),
+        networkId = newNetworkId or networkId
     }
     
     -- Clean up pending request
     self.pending[animalId] = nil
     
-    -- Setup interaction
+    -- Report network ID to server for tracking (we are the creator)
+    if newNetworkId then
+        TriggerServerEvent('rex-ranch:server:registerAnimalNetworkId', animalId, newNetworkId)
+    end
+    
+    -- Setup interaction (restricted to ranch staff via canInteract)
     self:SetupAnimalInteraction(entity, animalData)
     
     -- Setup wandering behavior if enabled
@@ -188,14 +261,14 @@ function SpawnManager:SpawnAnimal(animalId, animalData)
     end
     
     if Config.Debug then
-        print('^2[SPAWN MANAGER]^7 Spawned animal ' .. animalId .. ' (entity: ' .. entity .. ')')
+        print('^2[SPAWN MANAGER]^7 Spawned animal ' .. animalId .. ' (entity: ' .. entity .. ', netId: ' .. (newNetworkId or networkId or 'none') .. ')')
     end
     
     return true
 end
 
 -- Create the actual animal entity
-function SpawnManager:CreateAnimalEntity(animalData)
+function SpawnManager:CreateAnimalEntity(animalData, networkId)
     local model = GetHashKey(animalData.model)
     
     -- Request model
@@ -204,14 +277,26 @@ function SpawnManager:CreateAnimalEntity(animalData)
         return nil
     end
     
-    -- Create the ped
+    -- Check if we should use an existing networked entity from server
+    if networkId and networkId > 0 then
+        local entity = NetworkGetEntityFromNetworkId(networkId)
+        if DoesEntityExist(entity) then
+            if Config.Debug then
+                print('^2[SPAWN MANAGER]^7 Using existing networked entity ' .. entity .. ' (netId: ' .. networkId .. ')')
+            end
+            self:ConfigureAnimalEntity(entity, animalData)
+            return entity, networkId
+        end
+    end
+    
+    -- Create the ped as a networked entity (isNetwork = true)
     local entity = CreatePed(
         model,
         animalData.pos_x,
         animalData.pos_y,
         animalData.pos_z - 1.0,
         animalData.pos_w or 0,
-        false,
+        true,  -- isNetwork: true for multiplayer visibility
         false,
         0,
         0
@@ -221,17 +306,24 @@ function SpawnManager:CreateAnimalEntity(animalData)
         return nil
     end
     
+    -- Register entity as networked and get network ID
+    NetworkRegisterEntityAsNetworked(entity)
+    local newNetworkId = NetworkGetNetworkIdFromEntity(entity)
+    
     -- Configure entity
     self:ConfigureAnimalEntity(entity, animalData)
     
-    return entity
+    if Config.Debug then
+        print('^2[SPAWN MANAGER]^7 Created networked entity ' .. entity .. ' (netId: ' .. newNetworkId .. ')')
+    end
+    
+    return entity, newNetworkId
 end
 
 -- Configure animal entity properties
 function SpawnManager:ConfigureAnimalEntity(entity, animalData)
-    -- DON'T network register - keep animals client-side only
-    -- This prevents automatic syncing that causes duplicates
-    -- Each player manages their own local animal entities
+    -- Networked entity configuration
+    -- Animals are visible to all players but interactions are restricted to ranch staff
     
     -- Scale handling
     local scale = tonumber(animalData.scale) or 1.0
@@ -718,9 +810,9 @@ RegisterNetEvent('rex-ranch:client:spawnAnimals', function(animalData)
     end
 end)
 
--- Server grants spawn permission
-RegisterNetEvent('rex-ranch:client:spawnAnimalGranted', function(animalId, animalData)
-    SpawnManager:SpawnAnimal(animalId, animalData)
+-- Server grants spawn permission (now includes network ID for sync and isCreator flag)
+RegisterNetEvent('rex-ranch:client:spawnAnimalGranted', function(animalId, animalData, networkId, isCreator)
+    SpawnManager:SpawnAnimal(animalId, animalData, networkId, isCreator)
 end)
 
 -- Server denies spawn request

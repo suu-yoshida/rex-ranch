@@ -9,10 +9,10 @@ lib.locale()
 CreateThread(function()
     for i, salePointData in pairs(Config.SalePointLocations) do
         if salePointData.showblip == true then
-            local SaleBlip = BlipAddForCoords(1664425300, salePointData.coords)
+            local SaleBlip = Citizen.InvokeNative(0x5A039BB0BCA604B6, joaat(salePointData.blipsprite), salePointData.coords.x, salePointData.coords.y, salePointData.coords.z)
             SetBlipSprite(SaleBlip, joaat(salePointData.blipsprite), true)
             SetBlipScale(SaleBlip, salePointData.blipscale)
-            SetBlipName(SaleBlip, salePointData.blipname)
+            Citizen.InvokeNative(0x9CB1A1623062F402, SaleBlip, salePointData.blipname)
             salePointBlips[i] = SaleBlip -- Track the blip for cleanup
         end
     end
