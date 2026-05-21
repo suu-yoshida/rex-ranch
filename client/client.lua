@@ -22,7 +22,10 @@ RegisterNetEvent('rex-ranch:client:openranch', function(ranchid, jobaccess)
     local PlayerData = RSGCore.Functions.GetPlayerData()
     local playerjob = PlayerData.job.name
     local playerlevel = PlayerData.job.grade.level
-    if playerjob ~= jobaccess then return end
+    if playerjob ~= jobaccess then
+        lib.notify({ title = locale('access_denied'), description = locale('wrong_ranch_job'), type = 'error' })
+        return
+    end
     if playerlevel == 0 then
         TriggerEvent('rex-ranch:client:opentraineemenu', ranchid)
     end

@@ -1,5 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local spawnedPeds = {}
+lib.locale()
 
 CreateThread(function()
     while true do
@@ -54,7 +55,7 @@ function NearPed(npcData)
         {
             name = 'npc_ranch',
             icon = 'far fa-eye',
-            label = 'Open Ranch',
+            label = locale('open_ranch'),
             onSelect = function()
                 TriggerEvent('rex-ranch:client:openranch', npcData.ranchid, npcData.jobaccess)
             end,

@@ -14,7 +14,7 @@ local function setupWaterPropTargets()
     end
 
     exports.ox_target:addModel(Config.WaterProps, {
-        label = 'Fill Water Bucket',
+        label = locale('fill_water_bucket'),
         icon = 'fa-solid fa-bucket',
         distance = 1.5,
         canInteract = function(entity, distance, coords, name, bone)
@@ -42,12 +42,12 @@ local function setupWaterPropTargets()
         onSelect = function(data)
             -- Prevent spam and overlapping fill animations
             if fillWaterBucketActive then
-                lib.notify({type = 'error', description = 'You are already filling a bucket!'})
+                lib.notify({type = 'error', description = locale('already_filling_bucket')})
                 return
             end
 
             if fillWaterBucketCooldown > GetGameTimer() then
-                lib.notify({type = 'error', description = 'You\'re filling a bucket too quickly!'})
+                lib.notify({type = 'error', description = locale('filling_bucket_too_quickly')})
                 return
             end
 
@@ -67,7 +67,7 @@ local function setupWaterPropTargets()
 
             -- If bucket is not empty, show notification instead of playing animation
             if bucketUses > 0 then
-                lib.notify({type = 'error', description = 'This bucket is not empty! Use it up first.'})
+                lib.notify({type = 'error', description = locale('bucket_not_empty_use_first')})
                 return
             end
 

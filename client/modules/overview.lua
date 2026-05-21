@@ -11,8 +11,8 @@ RegisterNetEvent('rex-ranch:client:openAnimalOverview', function(ranchid)
     
     -- Show loading notification
     lib.notify({
-        title = 'Loading...',
-        description = 'Fetching animal data...',
+        title = locale('loading'),
+        description = locale('fetching_animal_data'),
         type = 'inform',
         duration = 2000
     })
@@ -20,8 +20,8 @@ RegisterNetEvent('rex-ranch:client:openAnimalOverview', function(ranchid)
     RSGCore.Functions.TriggerCallback('rex-ranch:server:getAnimalOverview', function(data)
         if not data or not data.animals then
             lib.notify({
-                title = 'Error',
-                description = 'Failed to load animal data',
+                title = locale('error'),
+                description = locale('failed_load_animal_data'),
                 type = 'error'
             })
             return
@@ -36,8 +36,8 @@ function showAnimalOverview(data, ranchid)
     
     -- Summary section
     table.insert(options, {
-        title = '📊 Summary',
-        description = string.format('Total: %d animals', data.summary.total),
+        title = locale('summary'),
+        description = string.format(locale('total_animals_desc'), data.summary.total),
         icon = 'fa-solid fa-chart-bar',
         event = 'rex-ranch:client:showAnimalSummary',
         args = { summary = data.summary },
@@ -48,7 +48,7 @@ function showAnimalOverview(data, ranchid)
     local animalsByRanch = {}
     if not ranchid then
         for _, animal in ipairs(data.animals) do
-            local ranch = animal.ranchid or 'Unknown'
+            local ranch = animal.ranchid or locale('unknown')
             if not animalsByRanch[ranch] then
                 animalsByRanch[ranch] = {}
             end
@@ -58,8 +58,8 @@ function showAnimalOverview(data, ranchid)
         -- Add ranch sections
         for ranch, animals in pairs(animalsByRanch) do
             table.insert(options, {
-                title = string.format('🏡 Ranch %s', ranch),
-                description = string.format('%d animals', #animals),
+                title = string.format(locale('ranch_title'), ranch),
+                description = string.format(locale('animals_count'), #animals),
                 icon = 'fa-solid fa-home',
                 event = 'rex-ranch:client:showRanchAnimals',
                 args = { animals = animals, ranchid = ranch },
@@ -70,7 +70,7 @@ function showAnimalOverview(data, ranchid)
         -- Show individual animals for specific ranch
         local animalsByType = {}
         for _, animal in ipairs(data.animals) do
-            local type = animal.model or 'Unknown'
+            local type = animal.model or locale('unknown')
             if not animalsByType[type] then
                 animalsByType[type] = {}
             end
@@ -94,12 +94,12 @@ function showAnimalOverview(data, ranchid)
             
             local statusText = ''
             if issues > 0 then
-                statusText = string.format(' (%d need attention)', issues)
+                statusText = string.format(locale('need_attention_suffix'), issues)
             end
             
             table.insert(options, {
                 title = string.format('%s %s', typeIcon, label),
-                description = string.format('%d animals%s', #animals, statusText),
+                description = string.format(locale('animals_count_with_status'), #animals, statusText),
                 icon = 'fa-solid fa-paw',
                 event = 'rex-ranch:client:showAnimalsByType',
                 args = { animals = animals, animalType = animalType, label = label },
@@ -111,8 +111,8 @@ function showAnimalOverview(data, ranchid)
     -- Add filter options
     if #data.animals > 0 then
         table.insert(options, {
-            title = '🔍 Filters',
-            description = 'Filter animals by status',
+            title = locale('filters'),
+            description = locale('filter_animals_by_status'),
             icon = 'fa-solid fa-filter',
             event = 'rex-ranch:client:showAnimalFilters',
             args = { animals = data.animals, ranchid = ranchid },
@@ -120,7 +120,7 @@ function showAnimalOverview(data, ranchid)
         })
     end
     
-    local title = ranchid and string.format('Animal Overview') or 'Animal Overview - All Ranches'
+    local title = ranchid and locale('animal_overview') or locale('animal_overview_all_ranches')
     
     lib.registerContext({
         id = 'animal_overview_menu',
@@ -139,14 +139,14 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     
     -- Total animals
     table.insert(options, {
-        title = string.format('Total Animals: %d', summary.total),
+        title = string.format(locale('total_animals_title'), summary.total),
         icon = 'fa-solid fa-hashtag',
         readOnly = true
     })
     
     -- Gender breakdown
     table.insert(options, {
-        title = string.format('Male: %d | Female: %d', summary.byGender.male or 0, summary.byGender.female or 0),
+        title = string.format(locale('gender_summary'), summary.byGender.male or 0, summary.byGender.female or 0),
         icon = 'fa-solid fa-venus-mars',
         readOnly = true
     })
@@ -157,7 +157,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
             local typeIcon = getAnimalTypeIcon(animalType)
             local label = getAnimalLabel(animalType)
             table.insert(options, {
-                title = string.format('%s %s: %d', typeIcon, label, count),
+                title = string.format(locale('animal_type_count_title'), typeIcon, label, count),
                 icon = 'fa-solid fa-paw',
                 readOnly = true
             })
@@ -167,7 +167,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     -- Status indicators
     if summary.pregnant > 0 then
         table.insert(options, {
-            title = string.format('🤱 Pregnant: %d', summary.pregnant),
+            title = string.format(locale('pregnant_count'), summary.pregnant),
             icon = 'fa-solid fa-baby',
             readOnly = true
         })
@@ -175,7 +175,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     
     if summary.ready_for_breeding > 0 then
         table.insert(options, {
-            title = string.format('💕 Ready to Breed: %d', summary.ready_for_breeding),
+            title = string.format(locale('ready_breed_count'), summary.ready_for_breeding),
             icon = 'fa-solid fa-heart',
             readOnly = true
         })
@@ -184,7 +184,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     -- Health issues
     if summary.unhealthy > 0 then
         table.insert(options, {
-            title = string.format('🏥 Unhealthy: %d', summary.unhealthy),
+            title = string.format(locale('unhealthy_count'), summary.unhealthy),
             icon = 'fa-solid fa-medical-note',
             readOnly = true
         })
@@ -192,7 +192,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     
     if summary.hungry > 0 then
         table.insert(options, {
-            title = string.format('🍖 Hungry: %d', summary.hungry),
+            title = string.format(locale('hungry_count'), summary.hungry),
             icon = 'fa-solid fa-utensils',
             readOnly = true
         })
@@ -200,7 +200,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     
     if summary.thirsty > 0 then
         table.insert(options, {
-            title = string.format('💧 Thirsty: %d', summary.thirsty),
+            title = string.format(locale('thirsty_count'), summary.thirsty),
             icon = 'fa-solid fa-tint',
             readOnly = true
         })
@@ -208,7 +208,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalSummary', function(data)
     
     lib.registerContext({
         id = 'animal_summary_menu',
-        title = 'Animal Summary',
+        title = locale('animal_summary'),
         options = options,
         menu = 'animal_overview_menu'
     })
@@ -225,7 +225,7 @@ RegisterNetEvent('rex-ranch:client:showRanchAnimals', function(data)
     -- Group by animal type
     local animalsByType = {}
     for _, animal in ipairs(animals) do
-        local type = animal.model or 'Unknown'
+        local type = animal.model or locale('unknown')
         if not animalsByType[type] then
             animalsByType[type] = {}
         end
@@ -249,12 +249,12 @@ RegisterNetEvent('rex-ranch:client:showRanchAnimals', function(data)
         
         local statusText = ''
         if issues > 0 then
-            statusText = string.format(' (%d need attention)', issues)
+            statusText = string.format(locale('need_attention_suffix'), issues)
         end
         
         table.insert(options, {
             title = string.format('%s %s', typeIcon, label),
-            description = string.format('%d animals%s', #typeAnimals, statusText),
+            description = string.format(locale('animals_count_with_status'), #typeAnimals, statusText),
             icon = 'fa-solid fa-paw',
             event = 'rex-ranch:client:showAnimalsByType',
             args = { animals = typeAnimals, animalType = animalType, label = label },
@@ -264,7 +264,7 @@ RegisterNetEvent('rex-ranch:client:showRanchAnimals', function(data)
     
     lib.registerContext({
         id = 'ranch_animals_menu',
-        title = string.format('Ranch %s Animals (%d)', ranchid, #animals),
+        title = string.format(locale('ranch_animals_title'), ranchid, #animals),
         options = options,
         menu = 'animal_overview_menu'
     })
@@ -317,8 +317,8 @@ RegisterNetEvent('rex-ranch:client:showAnimalsByType', function(data)
         end
         
         local genderIcon = animal.gender == 'male' and '♂️' or '♀️'
-        local title = string.format('ID: %s %s (Age: %dd)', animal.animalid, genderIcon, animal.age)
-        local description = statusText ~= '' and statusText or 'Healthy'
+        local title = string.format(locale('animal_id_age_title'), animal.animalid, genderIcon, animal.age)
+        local description = statusText ~= '' and statusText or locale('health_healthy')
         
         table.insert(options, {
             title = title,
@@ -332,7 +332,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalsByType', function(data)
     
     lib.registerContext({
         id = 'animals_by_type_menu',
-        title = string.format('%s Animals (%d)', label, #animals),
+        title = string.format(locale('animals_by_label_title'), label, #animals),
         options = options,
         menu = 'animal_overview_menu'
     })
@@ -348,26 +348,26 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     
     -- Basic info
     table.insert(options, {
-        title = string.format('Animal ID: %s', animal.animalid),
+        title = string.format(locale('animal_id_title'), animal.animalid),
         icon = 'fa-solid fa-id-card',
         readOnly = true
     })
     
     table.insert(options, {
-        title = string.format('Type: %s', getAnimalLabel(animal.model)),
+        title = string.format(locale('animal_type_title'), getAnimalLabel(animal.model)),
         icon = 'fa-solid fa-paw',
         readOnly = true
     })
     
     local genderIcon = animal.gender == 'male' and '♂️' or '♀️'
     table.insert(options, {
-        title = string.format('Gender: %s %s', genderIcon, animal.gender),
+        title = string.format(locale('animal_gender_title'), genderIcon, animal.gender),
         icon = 'fa-solid fa-venus-mars',
         readOnly = true
     })
     
     table.insert(options, {
-        title = string.format('Age: %d days', animal.age),
+        title = string.format(locale('animal_age_days'), animal.age),
         icon = 'fa-solid fa-calendar',
         readOnly = true
     })
@@ -375,7 +375,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     -- Health stats
     local healthColor = animal.health >= 70 and 'green' or (animal.health >= 40 and 'orange' or 'red')
     table.insert(options, {
-        title = string.format('Health: %d%%', math.floor(animal.health)),
+        title = string.format(locale('health_percent'), math.floor(animal.health)),
         icon = 'fa-solid fa-heart-pulse',
         iconColor = healthColor,
         readOnly = true
@@ -383,7 +383,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     
     local hungerColor = animal.hunger >= 50 and 'green' or (animal.hunger >= 25 and 'orange' or 'red')
     table.insert(options, {
-        title = string.format('Hunger: %d%%', math.floor(animal.hunger)),
+        title = string.format(locale('hunger_percent'), math.floor(animal.hunger)),
         icon = 'fa-solid fa-utensils',
         iconColor = hungerColor,
         readOnly = true
@@ -391,7 +391,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     
     local thirstColor = animal.thirst >= 50 and 'green' or (animal.thirst >= 25 and 'orange' or 'red')
     table.insert(options, {
-        title = string.format('Thirst: %d%%', math.floor(animal.thirst)),
+        title = string.format(locale('thirst_percent'), math.floor(animal.thirst)),
         icon = 'fa-solid fa-tint',
         iconColor = thirstColor,
         readOnly = true
@@ -400,22 +400,22 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     -- Special status
     if animal.pregnant then
         table.insert(options, {
-            title = 'Status: Pregnant',
-            description = animal.pregnancy_status or 'Expecting',
+            title = locale('status_pregnant'),
+            description = animal.pregnancy_status or locale('expecting'),
             icon = 'fa-solid fa-baby',
             iconColor = 'pink',
             readOnly = true
         })
     elseif animal.breeding_ready then
         table.insert(options, {
-            title = 'Status: Ready to Breed',
+            title = locale('status_ready_breed'),
             icon = 'fa-solid fa-heart',
             iconColor = 'red',
             readOnly = true
         })
     elseif animal.breeding_restriction then
         table.insert(options, {
-            title = 'Status: Breeding Restricted',
+            title = locale('status_breeding_restricted'),
             description = animal.breeding_restriction,
             icon = 'fa-solid fa-ban',
             iconColor = 'red',
@@ -423,7 +423,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
         })
     else
         table.insert(options, {
-            title = 'Status: Normal',
+            title = locale('status_normal'),
             icon = 'fa-solid fa-check',
             iconColor = 'green',
             readOnly = true
@@ -433,7 +433,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     -- Position info
     if animal.pos_x and animal.pos_y and animal.pos_z then
         table.insert(options, {
-            title = string.format('Location: %.1f, %.1f, %.1f', animal.pos_x, animal.pos_y, animal.pos_z),
+            title = string.format(locale('location_coords'), animal.pos_x, animal.pos_y, animal.pos_z),
             icon = 'fa-solid fa-map-marker-alt',
             readOnly = true
         })
@@ -441,7 +441,7 @@ RegisterNetEvent('rex-ranch:client:showAnimalDetails', function(data)
     
     lib.registerContext({
         id = 'animal_details_menu',
-        title = string.format('Animal Details'),
+        title = locale('animal_details'),
         options = options,
         menu = 'animals_by_type_menu'
     })
@@ -474,57 +474,57 @@ RegisterNetEvent('rex-ranch:client:showAnimalFilters', function(data)
     -- Filter options
     if pregnantCount > 0 then
         table.insert(options, {
-            title = string.format('🤱 Pregnant Animals (%d)', pregnantCount),
+            title = string.format(locale('pregnant_animals_count'), pregnantCount),
             icon = 'fa-solid fa-baby',
             event = 'rex-ranch:client:showFilteredAnimals',
-            args = { animals = animals, filter = 'pregnant', title = 'Pregnant Animals' },
+            args = { animals = animals, filter = 'pregnant', title = locale('pregnant_animals') },
             arrow = true
         })
     end
     
     if breedingReadyCount > 0 then
         table.insert(options, {
-            title = string.format('💕 Ready to Breed (%d)', breedingReadyCount),
+            title = string.format(locale('ready_breed_animals_count'), breedingReadyCount),
             icon = 'fa-solid fa-heart',
             event = 'rex-ranch:client:showFilteredAnimals',
-            args = { animals = animals, filter = 'breeding_ready', title = 'Ready to Breed' },
+            args = { animals = animals, filter = 'breeding_ready', title = locale('ready_to_breed') },
             arrow = true
         })
     end
     
     if unhealthyCount > 0 then
         table.insert(options, {
-            title = string.format('🏥 Unhealthy Animals (%d)', unhealthyCount),
+            title = string.format(locale('unhealthy_animals_count'), unhealthyCount),
             icon = 'fa-solid fa-medical-note',
             event = 'rex-ranch:client:showFilteredAnimals',
-            args = { animals = animals, filter = 'is_unhealthy', title = 'Unhealthy Animals' },
+            args = { animals = animals, filter = 'is_unhealthy', title = locale('unhealthy_animals') },
             arrow = true
         })
     end
     
     if hungryCount > 0 then
         table.insert(options, {
-            title = string.format('🍖 Hungry Animals (%d)', hungryCount),
+            title = string.format(locale('hungry_animals_count'), hungryCount),
             icon = 'fa-solid fa-utensils',
             event = 'rex-ranch:client:showFilteredAnimals',
-            args = { animals = animals, filter = 'is_hungry', title = 'Hungry Animals' },
+            args = { animals = animals, filter = 'is_hungry', title = locale('hungry_animals') },
             arrow = true
         })
     end
     
     if thirstyCount > 0 then
         table.insert(options, {
-            title = string.format('💧 Thirsty Animals (%d)', thirstyCount),
+            title = string.format(locale('thirsty_animals_count'), thirstyCount),
             icon = 'fa-solid fa-tint',
             event = 'rex-ranch:client:showFilteredAnimals',
-            args = { animals = animals, filter = 'is_thirsty', title = 'Thirsty Animals' },
+            args = { animals = animals, filter = 'is_thirsty', title = locale('thirsty_animals') },
             arrow = true
         })
     end
     
     lib.registerContext({
         id = 'animal_filters_menu',
-        title = 'Animal Filters',
+        title = locale('animal_filters'),
         options = options,
         menu = 'animal_overview_menu'
     })
@@ -549,17 +549,17 @@ RegisterNetEvent('rex-ranch:client:showFilteredAnimals', function(data)
     
     for _, animal in ipairs(filteredAnimals) do
         local genderIcon = animal.gender == 'male' and '♂️' or '♀️'
-        local animalTitle = string.format('ID: %s %s (%s)', animal.animalid, genderIcon, getAnimalLabel(animal.model))
+        local animalTitle = string.format(locale('animal_id_type_title'), animal.animalid, genderIcon, getAnimalLabel(animal.model))
         
         local description = ''
         if animal.pregnant and animal.pregnancy_status then
             description = animal.pregnancy_status
         elseif animal.is_unhealthy then
-            description = string.format('Health: %d%%', math.floor(animal.health))
+            description = string.format(locale('health_percent'), math.floor(animal.health))
         elseif animal.is_hungry then
-            description = string.format('Hunger: %d%%', math.floor(animal.hunger))
+            description = string.format(locale('hunger_percent'), math.floor(animal.hunger))
         elseif animal.is_thirsty then
-            description = string.format('Thirst: %d%%', math.floor(animal.thirst))
+            description = string.format(locale('thirst_percent'), math.floor(animal.thirst))
         end
         
         table.insert(options, {
@@ -574,7 +574,7 @@ RegisterNetEvent('rex-ranch:client:showFilteredAnimals', function(data)
     
     lib.registerContext({
         id = 'filtered_animals_menu',
-        title = string.format('%s (%d)', title, #filteredAnimals),
+        title = string.format(locale('filtered_title_count'), title, #filteredAnimals),
         options = options,
         menu = 'animal_filters_menu'
     })
@@ -587,18 +587,18 @@ end)
 
 -- Animal model to label mapping
 local animalLabels = {
-    ['a_c_cow'] = 'Cow',
-    ['a_c_bull_01'] = 'Bull',
-    ['a_c_pig'] = 'Pig',
-    ['a_c_sheep'] = 'Sheep',
-    ['a_c_goat'] = 'Goat',
-    ['a_c_horse'] = 'Horse',
-    ['a_c_chicken'] = 'Chicken',
-    ['a_c_rooster'] = 'Rooster'
+    ['a_c_cow'] = locale('animal_cow'),
+    ['a_c_bull_01'] = locale('animal_bull'),
+    ['a_c_pig'] = locale('animal_pig'),
+    ['a_c_sheep'] = locale('animal_sheep'),
+    ['a_c_goat'] = locale('animal_goat'),
+    ['a_c_horse'] = locale('animal_horse'),
+    ['a_c_chicken'] = locale('animal_chicken'),
+    ['a_c_rooster'] = locale('animal_rooster')
 }
 
 function getAnimalLabel(model)
-    return animalLabels[model] or model or 'Unknown'
+    return animalLabels[model] or model or locale('unknown')
 end
 
 function getAnimalTypeIcon(animalType)

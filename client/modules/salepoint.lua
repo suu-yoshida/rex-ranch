@@ -75,7 +75,7 @@ CreateThread(function()
             {
                 name = 'sale_point_npc',
                 icon = 'fas fa-hand-paper',
-                label = 'Sell Animals',
+                label = locale('sell_animals'),
                 onSelect = function()
                     TriggerEvent('rex-ranch:client:openSaleMenu', salePointData)
                 end,
@@ -98,7 +98,7 @@ RegisterNetEvent('rex-ranch:client:showSalePoints', function(data)
     for _, salePointData in pairs(Config.SalePointLocations) do
         table.insert(options, {
             title = salePointData.name,
-            description = 'Visit this livestock market to sell your animals',
+            description = locale('visit_market_sell_animals'),
             icon = 'fa-solid fa-location-dot',
             onSelect = function()
                 TriggerEvent('rex-ranch:client:openSaleMenu', salePointData)
@@ -109,7 +109,7 @@ RegisterNetEvent('rex-ranch:client:showSalePoints', function(data)
     
     lib.registerContext({
         id = 'sale_points_selector',
-        title = 'Select Livestock Market',
+        title = locale('select_livestock_market'),
         options = options
     })
     lib.showContext('sale_points_selector')
@@ -133,13 +133,13 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
     end
     
     if not isRancher then
-        lib.notify({ title = 'Access Denied', description = 'You must be a rancher to sell animals!', type = 'error' })
+        lib.notify({ title = locale('access_denied'), description = locale('must_be_rancher_sell'), type = 'error' })
         return
     end
     
     -- Trainee Ranchers (level 0) cannot sell animals
     if joblevel < 1 then
-        lib.notify({ title = 'Insufficient Rank', description = 'Only Ranch Hands and Managers can sell animals!', type = 'error' })
+        lib.notify({ title = locale('insufficient_rank'), description = locale('ranch_hands_managers_sell'), type = 'error' })
         return
     end
     
@@ -147,9 +147,9 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
     RSGCore.Functions.TriggerCallback('rex-ranch:server:getNearbyAnimalsForSale', function(animals)
         if not animals or #animals == 0 then
             if Config.RequireAnimalPresent then
-                lib.notify({ title = 'No Animals Nearby', description = 'You need to bring your animals to the sale point first! Use the herding system to move them.', type = 'inform' })
+                lib.notify({ title = locale('no_animals_nearby'), description = locale('bring_animals_sale_point'), type = 'inform' })
             else
-                lib.notify({ title = 'No Animals', description = 'You have no adult animals available for sale!', type = 'inform' })
+                lib.notify({ title = locale('no_animals'), description = locale('no_adult_animals_sale'), type = 'inform' })
             end
             return
         end
@@ -172,16 +172,16 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
         -- Add header showing nearby count
         if Config.RequireAnimalPresent then
             table.insert(options, {
-                title = 'Animals Ready for Sale: ' .. #nearbyAnimals,
-                description = #distantAnimals .. ' animals are too far away (need to be within ' .. Config.AnimalSaleDistance .. 'm)',
+                title = string.format(locale('animals_ready_for_sale'), #nearbyAnimals),
+                description = string.format(locale('animals_too_far_count'), #distantAnimals, Config.AnimalSaleDistance),
                 icon = 'fa-solid fa-info',
                 disabled = true
             })
             
             if #nearbyAnimals == 0 and #distantAnimals > 0 then
                 table.insert(options, {
-                    title = 'No Animals at Sale Point',
-                    description = 'Use the herding system to bring animals here, then return to sell them',
+                    title = locale('no_animals_at_sale_point'),
+                    description = locale('bring_animals_here_then_sell'),
                     icon = 'fa-solid fa-exclamation-triangle',
                     disabled = true
                 })
@@ -195,8 +195,8 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
                 end
                 
                 table.insert(options, {
-                    title = '💰 Sell All Animals (' .. #nearbyAnimals .. ')',
-                    description = 'Sell all nearby animals for a total of $' .. totalValue,
+                    title = string.format(locale('sell_all_animals'), #nearbyAnimals),
+                    description = string.format(locale('sell_all_nearby_total'), totalValue),
                     icon = 'fa-solid fa-hand-holding-dollar',
                     onSelect = function()
                         TriggerEvent('rex-ranch:client:confirmSellAll', nearbyAnimals, salePointData.name, salePointData.coords)
@@ -218,8 +218,8 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
                 end
                 
                 table.insert(options, {
-                    title = '💰 Sell All Animals (' .. #animals .. ')',
-                    description = 'Sell all your animals for a total of $' .. totalValue,
+                    title = string.format(locale('sell_all_animals'), #animals),
+                    description = string.format(locale('sell_all_your_total'), totalValue),
                     icon = 'fa-solid fa-hand-holding-dollar',
                     onSelect = function()
                         TriggerEvent('rex-ranch:client:confirmSellAll', animals, salePointData.name, salePointData.coords)
@@ -229,7 +229,7 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
                 
                 table.insert(options, {
                     title = '─────────────────────────',
-                    disabled = true
+                disabled = true
                 })
             end
         end
@@ -247,20 +247,20 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
             -- Health status indicator
             local healthStatus = ''
             if animal.health >= 80 then
-                healthStatus = '🟢 Healthy'
+                healthStatus = locale('sale_health_healthy')
             elseif animal.health >= 50 then
-                healthStatus = '🟡 Fair'
+                healthStatus = locale('sale_health_fair')
             else
-                healthStatus = '🔴 Poor'
+                healthStatus = locale('sale_health_poor')
             end
             
-            local description = 'Age: ' .. animal.age .. ' days | Health: ' .. healthStatus .. ' | Price: $' .. animal.salePrice
+            local description = string.format(locale('animal_sale_desc'), animal.age, healthStatus, animal.salePrice)
             if Config.RequireAnimalPresent and animal.distance then
-                description = description .. ' | Distance: ' .. animal.distance .. 'm'
+                description = description .. string.format(locale('distance_suffix'), animal.distance)
             end
             
             table.insert(options, {
-                title = '✅ ' .. animalName .. ' (' .. animal.ageCategory .. ')',
+                title = string.format(locale('animal_sellable_title'), animalName, animal.ageCategory),
                 description = description,
                 icon = 'fa-solid fa-dollar-sign',
                 onSelect = function()
@@ -273,7 +273,7 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
         -- Add distant animals (not sellable) if proximity is required
         if Config.RequireAnimalPresent and #distantAnimals > 0 then
             table.insert(options, {
-                title = '── Too Far Away ──',
+                title = '─────────────────────────',
                 disabled = true
             })
             
@@ -282,16 +282,16 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
                 
                 local healthStatus = ''
                 if animal.health >= 80 then
-                    healthStatus = '🟢 Healthy'
+                    healthStatus = locale('sale_health_healthy')
                 elseif animal.health >= 50 then
-                    healthStatus = '🟡 Fair'
+                    healthStatus = locale('sale_health_fair')
                 else
-                    healthStatus = '🔴 Poor'
+                    healthStatus = locale('sale_health_poor')
                 end
                 
                 table.insert(options, {
-                    title = '❌ ' .. animalName .. ' (' .. animal.ageCategory .. ')',
-                    description = 'Distance: ' .. animal.distance .. 'm (need within ' .. Config.AnimalSaleDistance .. 'm) | Potential: $' .. animal.salePrice,
+                    title = string.format(locale('animal_too_far_title'), animalName, animal.ageCategory),
+                    description = string.format(locale('animal_too_far_sale_desc'), animal.distance, Config.AnimalSaleDistance, animal.salePrice),
                     icon = 'fa-solid fa-map-marker-alt',
                     disabled = true
                 })
@@ -313,10 +313,10 @@ end)
 ---------------------------------------------
 function GetAnimalDisplayName(model)
     local displayNames = {
-        ['a_c_bull_01'] = 'Bull',
-        ['a_c_cow'] = 'Cow'
+        ['a_c_bull_01'] = locale('animal_bull'),
+        ['a_c_cow'] = locale('animal_cow')
     }
-    return displayNames[model] or 'Animal'
+    return displayNames[model] or locale('animal_generic')
 end
 
 ---------------------------------------------
@@ -328,23 +328,23 @@ RegisterNetEvent('rex-ranch:client:confirmSale', function(animal, salePointName,
     -- Check if animal is nearby before showing confirmation (only if proximity is required)
     if Config.RequireAnimalPresent and not animal.isNearby then
         lib.notify({ 
-            title = 'Animal Too Far', 
-            description = 'This animal is ' .. (animal.distance or 'unknown') .. 'm away. Bring it closer first!', 
+            title = locale('animal_too_far'), 
+            description = string.format(locale('animal_distance_bring_closer'), animal.distance or locale('unknown')), 
             type = 'error' 
         })
         return
     end
     
     local alert = lib.alertDialog({
-        header = 'Confirm Sale',
-        content = 'Are you sure you want to sell this ' .. animal.ageCategory .. ' ' .. animalName .. ' for $' .. animal.salePrice .. '?\\n\\nThis action cannot be undone!',
+        header = locale('confirm_sale'),
+        content = string.format(locale('confirm_sale_content'), animal.ageCategory, animalName, animal.salePrice),
         centered = true,
         cancel = true
     })
     
     if alert == 'confirm' then
         TriggerServerEvent('rex-ranch:server:sellAnimal', animal.animalid, animal.salePrice, salePointCoords)
-        lib.notify({ title = 'Sale Confirmed', description = 'Processing sale...', type = 'inform' })
+        lib.notify({ title = locale('sale_confirmed'), description = locale('processing_sale'), type = 'inform' })
     end
 end)
 
@@ -353,7 +353,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rex-ranch:client:confirmSellAll', function(animals, salePointName, salePointCoords)
     if not animals or #animals == 0 then
-        lib.notify({ title = 'Error', description = 'No animals to sell!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('no_animals_to_sell'), type = 'error' })
         return
     end
     
@@ -371,24 +371,24 @@ RegisterNetEvent('rex-ranch:client:confirmSellAll', function(animals, salePointN
     local summaryParts = {}
     for animalName, count in pairs(animalCounts) do
         if count == 1 then
-            table.insert(summaryParts, '1 ' .. animalName)
+            table.insert(summaryParts, string.format(locale('one_animal_summary'), animalName))
         else
-            table.insert(summaryParts, count .. ' ' .. animalName .. 's')
+            table.insert(summaryParts, string.format(locale('many_animals_summary'), count, animalName))
         end
     end
     local summary = table.concat(summaryParts, ', ')
     
     -- Show confirmation dialog
     local alert = lib.alertDialog({
-        header = 'Confirm Sell All Animals',
-        content = 'Are you sure you want to sell ALL of your animals?\\n\\n' .. summary .. '\\n\\nTotal Value: $' .. totalValue .. '\\n\\nThis action cannot be undone!',
+        header = locale('confirm_sell_all_animals'),
+        content = string.format(locale('confirm_sell_all_content'), summary, totalValue),
         centered = true,
         cancel = true
     })
     
     if alert == 'confirm' then
         -- Start selling process
-        lib.notify({ title = 'Selling Animals', description = 'Processing sale of ' .. #animals .. ' animals...', type = 'inform' })
+        lib.notify({ title = locale('selling_animals'), description = string.format(locale('processing_sale_count'), #animals), type = 'inform' })
         
         
         -- Trigger server event to sell all animals

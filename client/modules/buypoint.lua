@@ -75,7 +75,7 @@ CreateThread(function()
             {
                 name = 'buy_point_npc',
                 icon = 'fas fa-shopping-cart',
-                label = 'Buy Animals',
+                label = locale('buy_animals'),
                 onSelect = function()
                     TriggerEvent('rex-ranch:client:openBuyMenu', buyPointData)
                 end,
@@ -108,7 +108,7 @@ RegisterNetEvent('rex-ranch:client:openBuyMenu', function(buyPointData)
     end
     
     if not isRancher then
-        lib.notify({ title = 'Access Denied', description = 'You must be a rancher to buy animals!', type = 'error' })
+        lib.notify({ title = locale('access_denied'), description = locale('must_be_rancher_buy'), type = 'error' })
         return
     end
     
@@ -118,16 +118,16 @@ RegisterNetEvent('rex-ranch:client:openBuyMenu', function(buyPointData)
         
         -- Header showing capacity
         table.insert(options, {
-            title = 'Ranch Capacity: ' .. animalCount .. '/' .. Config.MaxRanchAnimals,
-            description = 'Current animals at ' .. playerRanchData.name,
+            title = string.format(locale('ranch_capacity'), animalCount, Config.MaxRanchAnimals),
+            description = string.format(locale('current_animals_at'), playerRanchData.name),
             icon = 'fa-solid fa-info',
             disabled = true
         })
         
         if animalCount >= Config.MaxRanchAnimals then
             table.insert(options, {
-                title = 'Ranch Full',
-                description = 'You have reached the maximum number of animals for your ranch',
+                title = locale('ranch_full'),
+                description = locale('ranch_full_desc'),
                 icon = 'fa-solid fa-exclamation-triangle',
                 disabled = true
             })
@@ -142,13 +142,13 @@ RegisterNetEvent('rex-ranch:client:openBuyMenu', function(buyPointData)
 
             -- Bull option
             table.insert(options, {
-                title = '🐂 Buy Bull',
-                description = 'Price: $' .. Config.BullBuyPrice .. ' | Strong breeding bull for cattle production',
+                title = locale('buy_bull'),
+                description = string.format(locale('buy_bull_desc'), Config.BullBuyPrice),
                 icon = 'fa-solid fa-dollar-sign',
                 onSelect = function()
                     TriggerEvent('rex-ranch:client:confirmBuyAnimal', {
                         animalType = 'a_c_bull_01',
-                        animalName = 'Bull',
+                        animalName = locale('animal_bull'),
                         price = Config.BullBuyPrice,
                         ranchData = playerRanchData,
                         buyPointData = buyPointData
@@ -159,13 +159,13 @@ RegisterNetEvent('rex-ranch:client:openBuyMenu', function(buyPointData)
 
             -- Cow option
             table.insert(options, {
-                title = '🐄 Buy Cow',
-                description = 'Price: $' .. Config.CowBuyPrice .. ' | Young cow ready for raising',
+                title = locale('buy_cow'),
+                description = string.format(locale('buy_cow_desc'), Config.CowBuyPrice),
                 icon = 'fa-solid fa-dollar-sign',
                 onSelect = function()
                     TriggerEvent('rex-ranch:client:confirmBuyAnimal', {
                         animalType = 'a_c_cow',
-                        animalName = 'Cow',
+                        animalName = locale('animal_cow'),
                         price = Config.CowBuyPrice,
                         ranchData = playerRanchData,
                         buyPointData = buyPointData
@@ -180,8 +180,8 @@ RegisterNetEvent('rex-ranch:client:openBuyMenu', function(buyPointData)
             })
             
             table.insert(options, {
-                title = 'Available Slots: ' .. availableSlots,
-                description = 'You can purchase up to ' .. availableSlots .. ' more animals',
+                title = string.format(locale('available_slots'), availableSlots),
+                description = string.format(locale('available_slots_desc'), availableSlots),
                 icon = 'fa-solid fa-calculator',
                 disabled = true
             })
@@ -207,8 +207,8 @@ RegisterNetEvent('rex-ranch:client:confirmBuyAnimal', function(data)
     -- Check if player has enough money
     if playerMoney < data.price then
         lib.notify({ 
-            title = 'Insufficient Funds', 
-            description = 'You need $' .. data.price .. ' but only have $' .. playerMoney, 
+            title = locale('insufficient_funds'), 
+            description = string.format(locale('need_money_have_money'), data.price, playerMoney), 
             type = 'error' 
         })
         return
@@ -216,15 +216,15 @@ RegisterNetEvent('rex-ranch:client:confirmBuyAnimal', function(data)
     
     -- Show confirmation dialog
     local alert = lib.alertDialog({
-        header = 'Confirm Purchase',
-        content = 'Are you sure you want to buy this ' .. data.animalName .. ' for $' .. data.price .. '? \n The animal will be available for pickup near the ' .. data.buyPointData.name .. '.',
+        header = locale('confirm_purchase'),
+        content = string.format(locale('confirm_purchase_content'), data.animalName, data.price, data.buyPointData.name),
         centered = true,
         cancel = true
     })
     
     if alert == 'confirm' then
         -- Process the purchase
-        lib.notify({ title = 'Processing Purchase', description = 'Buying ' .. data.animalName .. '...', type = 'inform' })
+        lib.notify({ title = locale('processing_purchase'), description = string.format(locale('buying_animal'), data.animalName), type = 'inform' })
         
         TriggerServerEvent('rex-ranch:server:buyAnimal', {
             animalType = data.animalType,

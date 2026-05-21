@@ -325,7 +325,7 @@ RegisterNetEvent('rex-ranch:server:ranchstorage', function(data)
     local playerjobgrade = Player.PlayerData.job.grade.level
     if playerjob ~= data.ranchid then return end
     if playerjobgrade < Config.StorageMinJobGrade then return end
-    local stashdata = { label = 'Ranch Storage', maxweight = Config.RanchStorageMaxWeight, slots = Config.RanchStorageMaxSlots }
+    local stashdata = { label = locale('ranch_storage'), maxweight = Config.RanchStorageMaxWeight, slots = Config.RanchStorageMaxSlots }
     local stashName = data.ranchid
     exports['rsg-inventory']:OpenInventory(src, stashName, stashdata)
 end)
@@ -677,7 +677,7 @@ RegisterNetEvent('rex-ranch:server:feedAnimal', function(data)
     
     -- Validate player is ranch staff
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to feed animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_feed')})
         return
     end
     
@@ -696,14 +696,14 @@ RegisterNetEvent('rex-ranch:server:feedAnimal', function(data)
     -- Check if player has animal feed in inventory
     local hasFood = Player.Functions.GetItemByName(Config.FeedItem)
     if not hasFood or hasFood.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You need ' .. Config.FeedItem .. ' to feed the animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = string.format(locale('need_item_feed_animals'), Config.FeedItem)})
         return
     end
     
     -- First verify animal exists and get current stats for debugging
     local animalData = MySQL.query.await('SELECT animalid, hunger, health, thirst FROM rex_ranch_animals WHERE animalid = ?', {animalid})
     if not animalData or #animalData == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Animal not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('animal_not_found')})
         if Config.Debug then
             print('^1[DEBUG]^7 Player ' .. src .. ' tried to feed non-existent animal ' .. animalid)
         end
@@ -733,9 +733,9 @@ RegisterNetEvent('rex-ranch:server:feedAnimal', function(data)
             TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[Config.FeedItem], 'remove', 1)
         end
         
-        local notifyMsg = 'Animal has been fed!'
+        local notifyMsg = locale('animal_fed')
         if healthBoost > 0 then
-            notifyMsg = notifyMsg .. ' Health improved by ' .. healthBoost .. '%!'
+            notifyMsg = notifyMsg .. ' ' .. string.format(locale('health_improved_by'), healthBoost)
         end
         TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = notifyMsg})
         
@@ -749,7 +749,7 @@ RegisterNetEvent('rex-ranch:server:feedAnimal', function(data)
         if Config.Debug then
             print('^1[ERROR]^7 Failed to update hunger for animal ' .. animalid .. ' - Success: ' .. tostring(updateSuccess) .. ', Rows affected: ' .. tostring(updateError))
         end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to feed animal! Please try again.'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_feed_animal')})
     end
 end)
 
@@ -762,7 +762,7 @@ RegisterNetEvent('rex-ranch:server:waterAnimal', function(data)
     
     -- Validate player is ranch staff
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to water animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_water')})
         return
     end
     
@@ -781,7 +781,7 @@ RegisterNetEvent('rex-ranch:server:waterAnimal', function(data)
     -- Check if player has water bucket in inventory
     local item = Player.Functions.GetItemByName('water_bucket')
     if not item then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You need a water bucket to water the animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('need_water_bucket_animals')})
         return
     end
     
@@ -789,14 +789,14 @@ RegisterNetEvent('rex-ranch:server:waterAnimal', function(data)
     local currentUses = (item.info and item.info.uses) or 0
     
     if currentUses <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Your water bucket is empty! Refill it at a water source.'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('water_bucket_empty')})
         return
     end
     
     -- First verify animal exists and get current stats for debugging
     local animalData = MySQL.query.await('SELECT animalid, thirst, health, hunger FROM rex_ranch_animals WHERE animalid = ?', {animalid})
     if not animalData or #animalData == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Animal not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('animal_not_found')})
         if Config.Debug then
             print('^1[DEBUG]^7 Player ' .. src .. ' tried to water non-existent animal ' .. animalid)
         end
@@ -825,13 +825,13 @@ RegisterNetEvent('rex-ranch:server:waterAnimal', function(data)
         Player.Functions.RemoveItem('water_bucket', 1, item.slot)
         
         local newUses = currentUses - 1
-        local newDescription = newUses > 0 and ('Water Bucket - ' .. newUses .. ' use' .. (newUses > 1 and 's' or '') .. ' left') or 'Empty Water Bucket'
+        local newDescription = newUses > 0 and string.format(locale('water_bucket_uses_left'), newUses) or locale('empty_water_bucket')
         Player.Functions.AddItem('water_bucket', 1, nil, {uses = newUses, description = newDescription})
         TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items['water_bucket'], 'remove', 1)
         
-        local notifyMsg = 'Animal has been watered!'
+        local notifyMsg = locale('animal_watered')
         if healthBoost > 0 then
-            notifyMsg = notifyMsg .. ' Health improved by ' .. healthBoost .. '%!'
+            notifyMsg = notifyMsg .. ' ' .. string.format(locale('health_improved_by'), healthBoost)
         end
         TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = notifyMsg})
         
@@ -845,7 +845,7 @@ RegisterNetEvent('rex-ranch:server:waterAnimal', function(data)
         if Config.Debug then
             print('^1[ERROR]^7 Failed to update thirst for animal ' .. animalid .. ' - Success: ' .. tostring(updateSuccess) .. ', Rows affected: ' .. tostring(updateError))
         end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to water animal! Please try again.'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_water_animal')})
     end
 end)
 
@@ -861,7 +861,7 @@ RegisterNetEvent('rex-ranch:server:fillWaterBucket', function()
     local item = Player.Functions.GetItemByName('water_bucket')
     
     if not item then
-        TriggerClientEvent('ox_lib:notify', src, {title = 'No Bucket', type = 'error', duration = 3000 })
+        TriggerClientEvent('ox_lib:notify', src, {title = locale('no_bucket'), type = 'error', duration = 3000 })
         return
     end
     
@@ -871,11 +871,11 @@ RegisterNetEvent('rex-ranch:server:fillWaterBucket', function()
     -- Only fill if bucket is empty (0 uses)
     if currentUses == 0 then
         Player.Functions.RemoveItem('water_bucket', 1, item.slot)
-        Player.Functions.AddItem('water_bucket', 1, nil, {uses = 5, description = 'Water Bucket - 5 uses left'})
+        Player.Functions.AddItem('water_bucket', 1, nil, {uses = 5, description = string.format(locale('water_bucket_uses_left'), 5)})
         TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items['water_bucket'], 'add', 1)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Water bucket filled!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('water_bucket_filled')})
     else
-        TriggerClientEvent('ox_lib:notify', src, {title = 'Bucket Not Empty', type = 'error', duration = 3000 })
+        TriggerClientEvent('ox_lib:notify', src, {title = locale('bucket_not_empty'), type = 'error', duration = 3000 })
     end
 end)
 
@@ -888,7 +888,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
     
     -- Validate player is ranch staff
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to collect from animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_collect')})
         return
     end
     
@@ -913,7 +913,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
     local success, errorMsg = pcall(function()
         MySQL.query('SELECT model, product_ready, health, hunger, thirst FROM rex_ranch_animals WHERE animalid = ?', {animalid}, function(result)
             if not result or #result == 0 then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Animal not found!'})
+                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('animal_not_found')})
                 if Config.Debug then
                     print('^1[COLLECT ERROR]^7 Animal ' .. animalid .. ' not found in database')
                 end
@@ -927,7 +927,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
         end
         
         if not animal.product_ready or animal.product_ready == 0 then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'No product ready to collect!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_product_ready')})
             if Config.Debug then
                 print('^3[COLLECT DEBUG]^7 Animal ' .. animalid .. ' has no product ready (product_ready: ' .. tostring(animal.product_ready) .. ')')
             end
@@ -937,7 +937,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
         -- Get product config
         local productConfig = Config.AnimalProducts[animal.model]
         if not productConfig then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This animal does not produce anything!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('animal_no_production_server')})
             if Config.Debug then
                 print('^1[COLLECT ERROR]^7 No product config found for animal model: ' .. tostring(animal.model))
             end
@@ -961,7 +961,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
             end)
             
             if resetSuccess and resetError and resetError > 0 then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Collected ' .. productConfig.amount .. ' ' .. productConfig.product .. '!'})
+                TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = string.format(locale('collected_product'), productConfig.amount, productConfig.product)})
                 
                 -- Update client cache immediately (no need for full refresh)
                 TriggerClientEvent('rex-ranch:client:refreshSingleAnimal', src, animalid, {product_ready = 0})
@@ -973,10 +973,10 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
                 if Config.Debug then
                     print('^1[COLLECT ERROR]^7 Failed to reset product_ready status for animal ' .. animalid .. ' - Success: ' .. tostring(resetSuccess) .. ', Result: ' .. tostring(resetError))
                 end
-                TriggerClientEvent('ox_lib:notify', src, {type = 'warning', description = 'Product collected but status update failed!'})
+                TriggerClientEvent('ox_lib:notify', src, {type = 'warning', description = locale('product_collected_status_failed')})
             end
         else
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to add item to inventory!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_add_inventory')})
             if Config.Debug then
                 print('^1[COLLECT ERROR]^7 Failed to add ' .. productConfig.product .. ' to player ' .. src .. ' inventory')
             end
@@ -986,7 +986,7 @@ RegisterNetEvent('rex-ranch:server:collectProduct', function(data)
     
     if not success then
         print('^1[ERROR]^7 Database error in collectProduct: ' .. tostring(errorMsg))
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Database error occurred!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('database_error')})
     end
 end)
 
@@ -1185,7 +1185,7 @@ function processAnimalOverviewData(animals)
             end
             animalInfo.breeding_ready = pregnantFemales == 0
             if pregnantFemales > 0 then
-                animalInfo.breeding_restriction = 'Cannot breed - ' .. pregnantFemales .. ' female(s) already pregnant'
+                animalInfo.breeding_restriction = string.format(locale('cannot_breed_females_pregnant'), pregnantFemales)
             end
         else
             animalInfo.breeding_ready = basicBreedingReady
@@ -1195,9 +1195,9 @@ function processAnimalOverviewData(animals)
         if animalInfo.pregnant and animalInfo.gestation_end_time then
             local timeRemaining = animalInfo.gestation_end_time - currentTime
             if timeRemaining > 0 then
-                animalInfo.pregnancy_status = 'Due in ' .. math.floor(timeRemaining / (24 * 3600)) .. ' days'
+                animalInfo.pregnancy_status = string.format(locale('due_in_days'), math.floor(timeRemaining / (24 * 3600)))
             else
-                animalInfo.pregnancy_status = 'Ready to give birth'
+                animalInfo.pregnancy_status = locale('ready_to_give_birth')
             end
         end
         
@@ -1239,13 +1239,13 @@ end
 RSGCore.Functions.CreateCallback('rex-ranch:server:getBreedingStatus', function(src, cb, animalid)
     local Player = RSGCore.Functions.GetPlayer(src)
     if not Player or not animalid then 
-        cb({status = 'error', message = 'Invalid request'})
+        cb({status = 'error', message = locale('invalid_request')})
         return 
     end
     
     MySQL.query('SELECT model, gender, age, pregnant, breeding_ready_time, health, hunger, thirst, born FROM rex_ranch_animals WHERE animalid = ?', {animalid}, function(result)
         if not result or #result == 0 then
-            cb({status = 'error', message = 'Animal not found'})
+            cb({status = 'error', message = locale('animal_not_found_plain')})
             return
         end
         
@@ -1259,25 +1259,25 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getBreedingStatus', function(
         
         -- Check if breeding is enabled
         if not Config.BreedingEnabled then
-            cb({status = 'disabled', message = 'Breeding system is disabled'})
+            cb({status = 'disabled', message = locale('breeding_system_disabled')})
             return
         end
         
         -- Check pregnancy status
         local isPregnant = (animal.pregnant == 1 or animal.pregnant == true or animal.pregnant == 'true')
         if isPregnant then
-            cb({status = 'pregnant', message = 'Animal is pregnant'})
+            cb({status = 'pregnant', message = locale('animal_is_pregnant')})
             return
         end
         
         -- Check age requirements
         if Config.MinAgeForBreeding and animalAge < Config.MinAgeForBreeding then
-            cb({status = 'too_young', message = 'Too young to breed (need ' .. Config.MinAgeForBreeding .. ' days, currently ' .. animalAge .. ' days)'})
+            cb({status = 'too_young', message = string.format(locale('too_young_breed'), Config.MinAgeForBreeding, animalAge)})
             return
         end
         
         if Config.MaxBreedingAge and animalAge > Config.MaxBreedingAge then
-            cb({status = 'too_old', message = 'Too old to breed (max ' .. Config.MaxBreedingAge .. ' days, currently ' .. animalAge .. ' days)'})
+            cb({status = 'too_old', message = string.format(locale('too_old_breed'), Config.MaxBreedingAge, animalAge)})
             return
         end
         
@@ -1288,11 +1288,11 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getBreedingStatus', function(
         
         if (animal.health or 100) < healthReq or (animal.hunger or 100) < hungerReq or (animal.thirst or 100) < thirstReq then
             local issues = {}
-            if (animal.health or 100) < healthReq then table.insert(issues, 'health too low') end
-            if (animal.hunger or 100) < hungerReq then table.insert(issues, 'hunger too low') end
-            if (animal.thirst or 100) < thirstReq then table.insert(issues, 'thirst too low') end
+            if (animal.health or 100) < healthReq then table.insert(issues, locale('issue_health_low')) end
+            if (animal.hunger or 100) < hungerReq then table.insert(issues, locale('issue_hunger_low')) end
+            if (animal.thirst or 100) < thirstReq then table.insert(issues, locale('issue_thirst_low')) end
             
-            cb({status = 'requirements_not_met', message = 'Requirements not met: ' .. table.concat(issues, ', ')})
+            cb({status = 'requirements_not_met', message = string.format(locale('requirements_not_met_msg'), table.concat(issues, ', '))})
             return
         end
         
@@ -1302,7 +1302,7 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getBreedingStatus', function(
             local hoursRemaining = math.ceil(timeRemaining / 3600)
             cb({
                 status = 'cooldown', 
-                message = 'Breeding cooldown active (' .. hoursRemaining .. 'h remaining)',
+                message = string.format(locale('breeding_cooldown_active'), hoursRemaining),
                 timeRemaining = timeRemaining
             })
             return
@@ -1321,24 +1321,24 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getBreedingStatus', function(
                         if pregnantResult and #pregnantResult > 0 and pregnantResult[1].pregnant_count > 0 then
                             cb({
                                 status = 'restricted', 
-                                message = 'Cannot breed - there are already ' .. pregnantResult[1].pregnant_count .. ' pregnant female(s) in this ranch'
+                                message = string.format(locale('cannot_breed_pregnant_in_ranch'), pregnantResult[1].pregnant_count)
                             })
                             return
                         else
                             -- Animal is ready to breed
-                            cb({status = 'ready', message = 'Ready for breeding'})
+                            cb({status = 'ready', message = locale('ready_for_breeding')})
                             return
                         end
                     end)
                 else
                     -- Animal is ready to breed (fallback if ranch not found)
-                    cb({status = 'ready', message = 'Ready for breeding'})
+                    cb({status = 'ready', message = locale('ready_for_breeding')})
                     return
                 end
             end)
         else
             -- Female animals don't have this restriction
-            cb({status = 'ready', message = 'Ready for breeding'})
+            cb({status = 'ready', message = locale('ready_for_breeding')})
         end
     end)
 end)
@@ -1394,12 +1394,12 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getPregnancyProgress', functi
             local remainingHours = hoursRemaining % 24
             
             if daysRemaining > 0 then
-                description = 'Due in ' .. daysRemaining .. 'd ' .. remainingHours .. 'h (' .. math.floor(progressPercent) .. '% complete)'
+                description = string.format(locale('due_in_days_hours'), daysRemaining, remainingHours, math.floor(progressPercent))
             else
-                description = 'Due in ' .. hoursRemaining .. ' hours (' .. math.floor(progressPercent) .. '% complete)'
+                description = string.format(locale('due_in_hours'), hoursRemaining, math.floor(progressPercent))
             end
         else
-            description = 'Ready to give birth! (100% complete)'
+            description = locale('ready_give_birth')
             progressPercent = 100
         end
         
@@ -1471,14 +1471,14 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getAvailableAnimalsForBreedin
                     -- Check pregnancy
                     if animal.pregnant == 1 then
                         canBreed = false
-                        breedingIssue = 'Pregnant'
+                        breedingIssue = locale('pregnant')
                     end
                     
                     -- Check breeding cooldown
                     if canBreed and animal.breeding_ready_time and animal.breeding_ready_time > currentTime then
                         canBreed = false
                         local hoursRemaining = math.ceil((animal.breeding_ready_time - currentTime) / 3600)
-                        breedingIssue = 'Cooldown (' .. hoursRemaining .. 'h)'
+                        breedingIssue = string.format(locale('cooldown_hours'), hoursRemaining)
                     end
                     
                     -- Check age requirements
@@ -1486,10 +1486,10 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getAvailableAnimalsForBreedin
                         local animalAge = animal.age or 0
                         if Config.MinAgeForBreeding and animalAge < Config.MinAgeForBreeding then
                             canBreed = false
-                            breedingIssue = 'Too young'
+                            breedingIssue = locale('too_young')
                         elseif Config.MaxBreedingAge and animalAge > Config.MaxBreedingAge then
                             canBreed = false
-                            breedingIssue = 'Too old'
+                            breedingIssue = locale('too_old')
                         end
                     end
                     
@@ -1501,7 +1501,7 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getAvailableAnimalsForBreedin
                         
                         if (animal.health or 100) < healthReq or (animal.hunger or 100) < hungerReq or (animal.thirst or 100) < thirstReq then
                             canBreed = false
-                            breedingIssue = 'Poor condition'
+                            breedingIssue = locale('poor_condition')
                         end
                     end
                     
@@ -1558,21 +1558,21 @@ RSGCore.Functions.CreateCallback('rex-ranch:server:getNearbyAnimalsForSale', fun
         -- Calculate sale price based on age
         local baseSellPrice = Config.BaseSellPrices[animal.model] or 100
         local ageMultiplier = 1.0
-        local ageCategory = 'Adult'
+        local ageCategory = locale('age_adult')
         
         -- Determine age category and apply multiplier
         if animal.age < Config.PrimeAgeStart then
             ageMultiplier = Config.AgePricing.young
-            ageCategory = 'Young'
+            ageCategory = locale('age_young')
         elseif animal.age >= Config.PrimeAgeStart and animal.age <= Config.PrimeAgeEnd then
             ageMultiplier = Config.AgePricing.prime
-            ageCategory = 'Prime'
+            ageCategory = locale('age_prime')
         elseif animal.age > Config.PrimeAgeEnd and animal.age < Config.OldAgeStart then
             ageMultiplier = Config.AgePricing.adult
-            ageCategory = 'Adult'
+            ageCategory = locale('age_adult')
         elseif animal.age >= Config.OldAgeStart then
             ageMultiplier = Config.AgePricing.old
-            ageCategory = 'Old'
+            ageCategory = locale('age_old')
         end
         
         local salePrice = math.floor(baseSellPrice * ageMultiplier)
@@ -1608,18 +1608,18 @@ RegisterNetEvent('rex-ranch:server:sellAnimal', function(animalid, salePrice, sa
     local Player = RSGCore.Functions.GetPlayer(src)
     
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Player not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_found')})
         return
     end
     
     -- Verify player is ranch staff
     if not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to sell animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_sell')})
         return
     end
     
     if not animalid or not salePrice then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Invalid animal or price!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('invalid_animal_or_price')})
         return
     end
     
@@ -1627,7 +1627,7 @@ RegisterNetEvent('rex-ranch:server:sellAnimal', function(animalid, salePrice, sa
     local animalResult = MySQL.query.await('SELECT animalid, ranchid, age, model FROM rex_ranch_animals WHERE animalid = ?', {animalid})
     
     if not animalResult or #animalResult == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Animal not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('animal_not_found')})
         if Config.Debug then
             print('^1[SELL ANIMAL ERROR]^7 Animal ' .. animalid .. ' not found in database')
         end
@@ -1640,7 +1640,7 @@ RegisterNetEvent('rex-ranch:server:sellAnimal', function(animalid, salePrice, sa
     if animal.age < Config.MinAgeToSell then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
-            description = 'This animal is too young to sell! Must be at least ' .. Config.MinAgeToSell .. ' days old.'
+            description = string.format(locale('animal_too_young_sell'), Config.MinAgeToSell)
         })
         return
     end
@@ -1656,7 +1656,7 @@ RegisterNetEvent('rex-ranch:server:sellAnimal', function(animalid, salePrice, sa
     end)
     
     if not deleteSuccess or not deleteError or deleteError == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to complete sale!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_complete_sale')})
         if Config.Debug then
             print('^1[SELL ANIMAL ERROR]^7 Failed to delete animal ' .. animalid .. ' from database')
         end
@@ -1669,7 +1669,7 @@ RegisterNetEvent('rex-ranch:server:sellAnimal', function(animalid, salePrice, sa
     -- Notify player
     TriggerClientEvent('ox_lib:notify', src, {
         type = 'success',
-        description = 'Sold ' .. (animal.model == 'a_c_bull_01' and 'Bull' or 'Cow') .. ' for $' .. salePrice .. '!'
+        description = string.format(locale('sold_animal_for'), animal.model == 'a_c_bull_01' and locale('animal_bull') or locale('animal_cow'), salePrice)
     })
     
     -- Remove from clients and refresh
@@ -1689,18 +1689,18 @@ RegisterNetEvent('rex-ranch:server:sellAllAnimals', function(animals, salePointC
     local Player = RSGCore.Functions.GetPlayer(src)
     
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Player not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_found')})
         return
     end
     
     -- Verify player is ranch staff
     if not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to sell animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_sell')})
         return
     end
     
     if not animals or #animals == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'No animals to sell!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_animals_to_sell')})
         return
     end
     
@@ -1749,17 +1749,17 @@ RegisterNetEvent('rex-ranch:server:sellAllAnimals', function(animals, salePointC
     if successCount == #animals then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'success',
-            description = 'Sold all ' .. successCount .. ' animals for a total of $' .. totalValue .. '!'
+            description = string.format(locale('sold_all_animals_total'), successCount, totalValue)
         })
     elseif successCount > 0 then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'warning',
-            description = 'Sold ' .. successCount .. ' out of ' .. #animals .. ' animals for $' .. totalValue .. '!'
+            description = string.format(locale('sold_some_animals_total'), successCount, #animals, totalValue)
         })
     else
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
-            description = 'Failed to sell any animals!'
+            description = locale('failed_sell_any_animals')
         })
     end
     
@@ -1782,19 +1782,19 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     local Player = RSGCore.Functions.GetPlayer(src)
     
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Player not found!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_found')})
         return
     end
     
     -- Verify player is ranch staff
     if not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to buy animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_buy')})
         return
     end
     
     -- Validate purchase data
     if not purchaseData or not purchaseData.animalType or not purchaseData.price or not purchaseData.ranchid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Invalid purchase data!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('invalid_purchase_data')})
         if Config.Debug then
             print('^1[BUY ANIMAL ERROR]^7 Invalid purchase data from player ' .. src)
         end
@@ -1807,7 +1807,7 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     if playerMoney < purchaseData.price then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
-            description = 'You need $' .. purchaseData.price .. ' but only have $' .. playerMoney
+            description = string.format(locale('need_money_have_money'), purchaseData.price, playerMoney)
         })
         return
     end
@@ -1815,7 +1815,7 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     -- Check animal count for the ranch
     local countResult = MySQL.query.await('SELECT COUNT(*) as count FROM rex_ranch_animals WHERE ranchid = ?', {purchaseData.ranchid})
     if not countResult or not countResult[1] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Error checking ranch capacity!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('error_checking_capacity')})
         if Config.Debug then
             print('^1[BUY ANIMAL ERROR]^7 Failed to count animals for ranch ' .. purchaseData.ranchid)
         end
@@ -1826,7 +1826,7 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     if currentCount >= Config.MaxRanchAnimals then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
-            description = 'Your ranch is at maximum capacity (' .. Config.MaxRanchAnimals .. ' animals)'
+            description = string.format(locale('ranch_max_capacity'), Config.MaxRanchAnimals)
         })
         return
     end
@@ -1834,7 +1834,7 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     -- Create unique animal ID
     local animalid = CreateAnimalId()
     if not animalid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to create animal ID!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_create_animal_id')})
         if Config.Debug then
             print('^1[BUY ANIMAL ERROR]^7 Failed to create unique animal ID for player ' .. src)
         end
@@ -1875,7 +1875,7 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     end)
     
     if not success or not error or error == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to purchase animal!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_purchase_animal')})
         if Config.Debug then
             print('^1[BUY ANIMAL ERROR]^7 Database insert failed: ' .. tostring(error))
         end
@@ -1888,13 +1888,13 @@ RegisterNetEvent('rex-ranch:server:buyAnimal', function(purchaseData)
     -- Notify player of successful purchase
     TriggerClientEvent('ox_lib:notify', src, {
         type = 'success',
-        description = 'Successfully purchased ' .. purchaseData.animalName .. ' for $' .. purchaseData.price .. '!'
+        description = string.format(locale('successfully_purchased_animal'), purchaseData.animalName, purchaseData.price)
     })
     
     if Config.ServerNotify then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'info',
-            description = 'A new animal has been purchased at ' .. (purchaseData.buyPointName or 'the livestock dealer') .. '!'
+            description = string.format(locale('new_animal_purchased_at'), purchaseData.buyPointName or 'Livestock Dealer')
         })
     end
     
@@ -2075,7 +2075,7 @@ RegisterNetEvent('rex-ranch:server:startBreeding', function(animal1id, animal2id
     local Player = RSGCore.Functions.GetPlayer(src)
     
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You must be ranch staff to breed animals!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('must_be_ranch_staff_breed')})
         return
     end
     
@@ -2087,7 +2087,7 @@ RegisterNetEvent('rex-ranch:server:startBreeding', function(animal1id, animal2id
     StartBreeding(animal1id, animal2id, false)
     
     -- Notify player
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Breeding initiated!'})
+    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('breeding_initiated')})
 end)
 
 ---------------------------------------------
@@ -2952,13 +2952,13 @@ RegisterNetEvent('rex-ranch:server:hireEmployee', function(ranchid, targetId, gr
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You do not have permission to hire staff!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_permission_hire_staff')})
         return
     end
 
     -- Check if target player is already employed at this ranch
     if Target.PlayerData.job.name == ranchid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This player is already employed at your ranch!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_already_employed')})
         if Config.Debug then
             print('^3[STAFF MANAGEMENT]^7 Attempted to hire ' .. Target.PlayerData.charinfo.firstname .. ' who is already employed at ' .. ranchid)
         end
@@ -2968,19 +2968,19 @@ RegisterNetEvent('rex-ranch:server:hireEmployee', function(ranchid, targetId, gr
 	-- check if the player can take the job
 	local canTake = exports['rsg-multijob']:CanTakeNewJob(Target.PlayerData.citizenid)
 	if not canTake then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Unable to hire as player has too many jobs!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_too_many_jobs')})
         return
 	end
 	
 	local staffCount = exports['rex-ranch']:getStaffCount(ranchid)
 	if staffCount >= Config.StaffManagement.MaxEmployeesPerRanch then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You have the maximum staff hired!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('maximum_staff_hired')})
         return
 	end
 
 	Target.Functions.SetJob(ranchid, grade)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Job added successfully'})
-    TriggerClientEvent('ox_lib:notify', targetId, {type = 'success', description = 'You have been hired at ' .. ranchid .. '!'})
+    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('job_added_successfully')})
+    TriggerClientEvent('ox_lib:notify', targetId, {type = 'success', description = string.format(locale('hired_at_ranch'), ranchid)})
 
 end)
 
@@ -2993,13 +2993,13 @@ RegisterNetEvent('rex-ranch:server:fireEmployee', function(ranchid, targetCitize
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You do not have permission to fire staff!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_permission_fire_staff')})
         return
     end
     
     -- Prevent manager from firing themselves
     if Player.PlayerData.citizenid == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You cannot fire yourself!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('cannot_fire_yourself')})
         return
     end
     
@@ -3009,7 +3009,7 @@ RegisterNetEvent('rex-ranch:server:fireEmployee', function(ranchid, targetCitize
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This player is not employed at your ranch!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_employed_ranch')})
             return
         end
         
@@ -3018,23 +3018,23 @@ RegisterNetEvent('rex-ranch:server:fireEmployee', function(ranchid, targetCitize
 		-- update multijob
 		local success = exports['rsg-multijob']:RemoveJobFromPlayer(targetCitizenid, ranchid)
 		if success then
-			TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Player removed from multijob!'})
+			TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('player_removed_multijob')})
 		else
 			print('Failed to remove job - player may not have this job')
-			TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to remove job - player may not have this job!'})
+			TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_remove_job')})
 		end
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'error', description = 'You have been fired from ' .. ranchid .. '!'})
+        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'error', description = string.format(locale('fired_from_ranch'), ranchid)})
     else
         -- Player is offline, verify they work at this ranch first
         local checkResult = MySQL.query.await('SELECT job FROM players WHERE citizenid = ?', {targetCitizenid})
         if checkResult and #checkResult > 0 then
             local jobData = json.decode(checkResult[1].job)
             if jobData.name ~= ranchid then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This player is not employed at your ranch!'})
+                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_employed_ranch')})
                 return
             end
         else
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Employee not found!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('employee_not_found')})
             return
         end
         
@@ -3043,15 +3043,15 @@ RegisterNetEvent('rex-ranch:server:fireEmployee', function(ranchid, targetCitize
 		-- update multijob
 		local success = exports['rsg-multijob']:RemoveJobFromPlayer(targetCitizenid, ranchid)
 		if success then
-			TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Player removed from multijob!'})
+			TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('player_removed_multijob')})
 		else
 			print('Failed to remove job - player may not have this job')
-			TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Failed to remove job - player may not have this job!'})
+			TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('failed_remove_job')})
 		end
 
     end
     
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Employee has been fired!'})
+    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('employee_fired')})
     
     if Config.Debug then
         print('^3[STAFF MANAGEMENT]^7 ' .. Player.PlayerData.charinfo.firstname .. ' fired employee ' .. targetCitizenid .. ' from ' .. ranchid)
@@ -3067,7 +3067,7 @@ RegisterNetEvent('rex-ranch:server:promoteEmployee', function(ranchid, targetCit
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You do not have permission to promote staff!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_permission_promote_staff')})
         return
     end
     
@@ -3076,7 +3076,7 @@ RegisterNetEvent('rex-ranch:server:promoteEmployee', function(ranchid, targetCit
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This player is not employed at your ranch!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_employed_ranch')})
             return
         end
         
@@ -3085,24 +3085,24 @@ RegisterNetEvent('rex-ranch:server:promoteEmployee', function(ranchid, targetCit
         
         -- Prevent promoting to same or higher grade than manager
         if currentGrade + 1 >= Player.PlayerData.job.grade.level and Player.PlayerData.job.grade.level < maxGrade then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You cannot promote an employee to your rank or higher!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('cannot_promote_to_rank')})
             return
         end
         
         if currentGrade >= maxGrade then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Employee is already at maximum rank!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('employee_max_rank')})
             return
         end
         
         Target.Functions.SetJob(ranchid, currentGrade + 1)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Employee promoted!'})
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'success', description = 'You have been promoted!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('employee_promoted')})
+        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'success', description = locale('you_promoted')})
         
         if Config.Debug then
             print('^2[STAFF MANAGEMENT]^7 ' .. Player.PlayerData.charinfo.firstname .. ' promoted ' .. Target.PlayerData.charinfo.firstname .. ' to grade ' .. (currentGrade + 1))
         end
     else
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Employee must be online to promote!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('employee_online_promote')})
     end
 end)
 
@@ -3115,13 +3115,13 @@ RegisterNetEvent('rex-ranch:server:demoteEmployee', function(ranchid, targetCiti
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You do not have permission to demote staff!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('no_permission_demote_staff')})
         return
     end
     
     -- Prevent manager from demoting themselves
     if Player.PlayerData.citizenid == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You cannot demote yourself!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('cannot_demote_yourself')})
         return
     end
     
@@ -3130,7 +3130,7 @@ RegisterNetEvent('rex-ranch:server:demoteEmployee', function(ranchid, targetCiti
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'This player is not employed at your ranch!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('player_not_employed_ranch')})
             return
         end
         
@@ -3138,24 +3138,23 @@ RegisterNetEvent('rex-ranch:server:demoteEmployee', function(ranchid, targetCiti
         
         -- Prevent demoting someone at same or higher rank (unless you're boss)
         if currentGrade >= Player.PlayerData.job.grade.level and Player.PlayerData.job.grade.level < 3 then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'You cannot demote someone at your rank or higher!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('cannot_demote_rank')})
             return
         end
         
         if currentGrade <= 0 then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Employee is already at minimum rank!'})
+            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('employee_min_rank')})
             return
         end
         
         Target.Functions.SetJob(ranchid, currentGrade - 1)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = 'Employee demoted!'})
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'info', description = 'You have been demoted!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('employee_demoted')})
+        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'info', description = locale('you_demoted')})
         
         if Config.Debug then
             print('^3[STAFF MANAGEMENT]^7 ' .. Player.PlayerData.charinfo.firstname .. ' demoted ' .. Target.PlayerData.charinfo.firstname .. ' to grade ' .. (currentGrade - 1))
         end
     else
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = 'Employee must be online to demote!'})
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('employee_online_demote')})
     end
 end)
-

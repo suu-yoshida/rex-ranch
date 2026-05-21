@@ -360,7 +360,7 @@ function SpawnManager:SetupAnimalInteraction(entity, animalData)
         {
             name = 'ranch_animal',
             icon = 'far fa-eye',
-            label = 'Animal Actions',
+            label = locale('animal_actions'),
             onSelect = function()
                 TriggerEvent('rex-ranch:client:animalmenu', entity, animalData)
             end,
@@ -746,8 +746,8 @@ local function finalizeAnimalMenu(menuOptions, freshData, animal)
         disabled = true
     })
     table.insert(menuOptions, {
-        title = 'Animal Actions',
-        description = 'Care for your animal',
+        title = locale('animal_actions'),
+        description = locale('care_for_animal'),
         icon = 'fa-solid fa-hand-holding-heart',
         event = 'rex-ranch:client:actionsmenu',
         args = { animalid = freshData.animalid, animal = animal },
@@ -756,7 +756,7 @@ local function finalizeAnimalMenu(menuOptions, freshData, animal)
     
     lib.registerContext({
         id = 'animal_info_menu',
-        title = 'Ranch Animal #'..freshData.animalid,
+        title = string.format(locale('ranch_animal_id'), freshData.animalid),
         options = menuOptions
     })
     lib.showContext('animal_info_menu')
@@ -893,7 +893,7 @@ end)
 -- Animal menu
 RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
     if not DoesEntityExist(animal) or not data or not data.animalid then
-        lib.notify({ title = 'Error', description = 'Invalid animal data!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_animal_data'), type = 'error' })
         return
     end
     
@@ -907,14 +907,14 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
     freshData.animalid = freshData.animalid or data.animalid
     
     local actualAge = freshData.age or 0
-    local genderText = freshData.gender and freshData.gender:gsub("^%l", string.upper) or 'Unknown'
+    local genderText = freshData.gender and freshData.gender:gsub("^%l", string.upper) or locale('unknown')
     local isPregnant = (freshData.pregnant == 1 or freshData.pregnant == true)
-    local pregnantStatus = isPregnant and 'Pregnant' or 'Not Pregnant'
+    local pregnantStatus = isPregnant and locale('pregnant') or locale('not_pregnant')
     
     -- Animal age categories
-    local ageText = 'Youth'
-    if actualAge < 5 then ageText = 'Youth' end
-    if actualAge >= 5 then ageText = 'Adult' end
+    local ageText = locale('age_youth')
+    if actualAge < 5 then ageText = locale('age_youth') end
+    if actualAge >= 5 then ageText = locale('age_adult') end
     
     -- Health status colors
     local healthColorScheme = 'green'
@@ -938,42 +938,42 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
     -- Build menu options
     local menuOptions = {
         {
-            title = 'Animal Information',
-            description = 'Basic animal details',
+            title = locale('animal_information'),
+            description = locale('basic_animal_details'),
             icon = 'fa-solid fa-info-circle',
             disabled = false
         },
         {
-            title = 'Age: '..ageText,
-            description = actualAge..' days old',
+            title = string.format(locale('age_title'), ageText),
+            description = string.format(locale('days_old'), actualAge),
             icon = 'fa-solid fa-calendar-days',
             disabled = false
         },
         {
-            title = 'Gender: '..genderText:gsub("^%l", string.upper),
-            description = freshData.gender == 'female' and pregnantStatus or 'Male animal',
+            title = string.format(locale('gender_title'), genderText:gsub("^%l", string.upper)),
+            description = freshData.gender == 'female' and pregnantStatus or locale('male_animal'),
             icon = freshData.gender == 'male' and 'fa-solid fa-mars' or 'fa-solid fa-venus',
             disabled = false
         },
         {
-            title = 'Health: '..math.floor(freshData.health)..'%',
-            description = 'Overall animal health',
+            title = string.format(locale('health_percent'), math.floor(freshData.health)),
+            description = locale('overall_animal_health'),
             progress = freshData.health,
             colorScheme = healthColorScheme,
             icon = 'fa-solid fa-heart-pulse',
             disabled = false
         },
         {
-            title = 'Thirst: '..math.floor(freshData.thirst)..'%',
-            description = 'Animal water needs',
+            title = string.format(locale('thirst_percent'), math.floor(freshData.thirst)),
+            description = locale('animal_water_needs'),
             progress = freshData.thirst,
             colorScheme = thirstColorScheme,
             icon = 'fa-solid fa-droplet',
             disabled = false
         },
         {
-            title = 'Hunger: '..math.floor(freshData.hunger)..'%',
-            description = 'Animal food needs',
+            title = string.format(locale('hunger_percent'), math.floor(freshData.hunger)),
+            description = locale('animal_food_needs'),
             progress = freshData.hunger,
             colorScheme = hungerColorScheme,
             icon = 'fa-solid fa-wheat-awn',
@@ -991,7 +991,7 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
             RSGCore.Functions.TriggerCallback('rex-ranch:server:getPregnancyProgress', function(progressData)
                 if progressData and progressData.isPregnant then
                     breedingOption = {
-                        title = 'Breeding: Pregnant',
+                        title = locale('breeding_pregnant'),
                         description = progressData.description,
                         icon = 'fa-solid fa-baby',
                         progress = progressData.progressPercent,
@@ -1000,8 +1000,8 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
                     }
                 else
                     breedingOption = {
-                        title = 'Breeding: Pregnant',
-                        description = 'Expecting offspring soon',
+                        title = locale('breeding_pregnant'),
+                        description = locale('expecting_offspring_soon'),
                         icon = 'fa-solid fa-baby',
                         disabled = false
                     }
@@ -1015,7 +1015,7 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
             return
         elseif breedingData.status == 'cooldown' then
             breedingOption = {
-                title = 'Breeding: Cooldown',
+                title = locale('breeding_cooldown'),
                 description = breedingData.message,
                 icon = 'fa-solid fa-clock',
                 disabled = false
@@ -1048,20 +1048,20 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
             end
         elseif breedingData.status == 'ready' then
             breedingOption = {
-                title = 'Breeding: Ready',
+                title = locale('breeding_ready'),
                 description = breedingData.message,
                 icon = freshData.gender == 'male' and 'fa-solid fa-mars' or 'fa-solid fa-venus',
                 disabled = false
             }
             
             -- Add breeding partner button for ready animals
-            local buttonTitle = 'Find Breeding Partner'
-            local buttonDesc = 'Look for compatible animals to breed with'
+            local buttonTitle = locale('find_breeding_partner')
+            local buttonDesc = locale('find_breeding_partner_desc')
             
             if freshData.gender == 'male' then
-                buttonDesc = 'Find female animals to breed with'
+                buttonDesc = locale('find_female_animals')
             elseif freshData.gender == 'female' then
-                buttonDesc = 'Find male animals to breed with'
+                buttonDesc = locale('find_male_animals')
             end
             
             table.insert(menuOptions, breedingOption)
@@ -1079,15 +1079,15 @@ RegisterNetEvent('rex-ranch:client:animalmenu', function(animal, data)
         else
             -- Handle other statuses (disabled, too_young, too_old, requirements_not_met, error)
             local statusTitles = {
-                disabled = 'Disabled',
-                too_young = 'Too Young',
-                too_old = 'Too Old',
-                requirements_not_met = 'Not Ready',
-                error = 'Error'
+                disabled = locale('disabled'),
+                too_young = locale('too_young'),
+                too_old = locale('too_old'),
+                requirements_not_met = locale('not_ready'),
+                error = locale('error')
             }
             
             breedingOption = {
-                title = 'Breeding: ' .. (statusTitles[breedingData.status] or 'Unknown'),
+                title = string.format(locale('breeding_status_title'), statusTitles[breedingData.status] or locale('unknown')),
                 description = breedingData.message,
                 icon = 'fa-solid fa-exclamation-circle',
                 disabled = false
@@ -1114,51 +1114,51 @@ RegisterNetEvent('rex-ranch:client:actionsmenu', function(data)
     
     local freshData = getFreshAnimalData(animalid)
     if not freshData then
-        lib.notify({ title = 'Error', description = 'Animal data not found!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('animal_data_not_found'), type = 'error' })
         return
     end
     
-    local hungerStatus = freshData.hunger > 80 and 'Well Fed' or freshData.hunger > 50 and 'Hungry' or 'Starving'
-    local thirstStatus = freshData.thirst > 80 and 'Hydrated' or freshData.thirst > 50 and 'Thirsty' or 'Dehydrated'
-    local followStatus = followStates[animalid] and 'Following' or 'Idle'
+    local hungerStatus = freshData.hunger > 80 and locale('well_fed') or freshData.hunger > 50 and locale('hungry') or locale('starving')
+    local thirstStatus = freshData.thirst > 80 and locale('hydrated') or freshData.thirst > 50 and locale('thirsty') or locale('dehydrated')
+    local followStatus = followStates[animalid] and locale('following') or locale('idle')
     
     lib.registerContext({
         id = 'animal_action_menu',
-        title = 'Animal Actions',
+        title = locale('animal_actions'),
         menu = 'animal_info_menu',
         options = {
             {
-                title = 'Toggle Follow ('..followStatus..')',
-                description = 'Make the animal follow you or stay put',
+                title = string.format(locale('toggle_follow_status'), followStatus),
+                description = locale('toggle_follow_desc'),
                 icon = followStates[animalid] and 'fa-solid fa-user-check' or 'fa-solid fa-walking',
                 event = 'rex-ranch:client:animalfollow',
                 args = { animal = animal, animalid = animalid }
             },
             {
                 title = '─────────────────────────',
-                disabled = true
+        disabled = true
             },
             {
-                title = 'Feed Animal ('..hungerStatus..')',
-                description = 'Requires: '..RSGCore.Shared.Items[Config.FeedItem].label,
+                title = string.format(locale('feed_animal_status'), hungerStatus),
+                description = string.format(locale('requires_item'), RSGCore.Shared.Items[Config.FeedItem].label),
                 icon = 'fa-solid fa-wheat-awn',
                 event = 'rex-ranch:client:feedAnimal',
                 args = { animalid = animalid, animal = animal }
             },
             {
-                title = 'Water Animal ('..thirstStatus..')',
-                description = 'Requires: '..RSGCore.Shared.Items[Config.WaterItem].label,
+                title = string.format(locale('water_animal_status'), thirstStatus),
+                description = string.format(locale('requires_item'), RSGCore.Shared.Items[Config.WaterItem].label),
                 icon = 'fa-solid fa-droplet',
                 event = 'rex-ranch:client:waterAnimal',
                 args = { animalid = animalid, animal = animal }
             },
             {
                 title = '─────────────────────────',
-                disabled = true
+        disabled = true
             },
             {
-                title = 'Check Products',
-                description = 'See what products this animal can produce',
+                title = locale('check_products'),
+                description = locale('check_products_desc'),
                 icon = 'fa-solid fa-gift',
                 event = 'rex-ranch:client:checkProducts',
                 args = { animalid = animalid, animal = animal }
@@ -1171,12 +1171,12 @@ end)
 -- Animal follow system
 RegisterNetEvent('rex-ranch:client:animalfollow', function(data)
     if not DoesEntityExist(data.animal) or not DoesEntityExist(cache.ped) then
-        lib.notify({ title = 'Error', description = 'Invalid animal or player!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_animal_or_player'), type = 'error' })
         return
     end
     
     if IsPedDeadOrDying(data.animal, true) then
-        lib.notify({ title = 'Animal Dead', description = 'This animal is dead!', type = 'error' })
+        lib.notify({ title = locale('animal_dead'), description = locale('animal_dead_desc'), type = 'error' })
         return
     end
     
@@ -1190,13 +1190,13 @@ RegisterNetEvent('rex-ranch:client:animalfollow', function(data)
         local animalOffset = vector3(0.0, 2.0, 0.0)
         ClearPedTasks(data.animal)
         TaskFollowToOffsetOfEntity(data.animal, cache.ped, animalOffset.x, animalOffset.y, animalOffset.z, 1.0, -1, 0.0, 1)
-        lib.notify({ title = 'Animal Following!', description = 'The animal is now following you.', duration = 5000, type = 'info' })
+        lib.notify({ title = locale('animal_following'), description = locale('animal_following_desc'), duration = 5000, type = 'info' })
     else
         local currentPos = GetEntityCoords(data.animal)
         local heading = GetEntityHeading(data.animal)
         ClearPedTasks(data.animal)
         TriggerServerEvent('rex-ranch:server:saveAnimalPosition', data.animalid, currentPos.x, currentPos.y, currentPos.z, heading)
-        lib.notify({ title = 'Animal Stopped', description = 'The animal stopped following you.', duration = 5000, type = 'info' })
+        lib.notify({ title = locale('animal_stopped'), description = locale('animal_stopped_desc'), duration = 5000, type = 'info' })
     end
 end)
 
@@ -1206,7 +1206,7 @@ RegisterNetEvent('rex-ranch:client:feedAnimal', function(data)
     local animalid = data.animalid
     
     if not DoesEntityExist(cache.ped) or not DoesEntityExist(animal) then
-        lib.notify({ title = 'Error', description = 'Invalid player or animal!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_player_or_animal'), type = 'error' })
         return
     end
     
@@ -1226,7 +1226,7 @@ RegisterNetEvent('rex-ranch:client:feedAnimal', function(data)
         LocalPlayer.state:set('inv_busy', false, true)
         isBusy = false
     else
-        lib.notify({type = 'error', description = 'You need animal feed to feed the animals!'})
+        lib.notify({type = 'error', description = locale('need_animal_feed')})
     end
 end)
 
@@ -1236,7 +1236,7 @@ RegisterNetEvent('rex-ranch:client:waterAnimal', function(data)
     local animalid = data.animalid
     
     if not DoesEntityExist(cache.ped) or not DoesEntityExist(animal) then
-        lib.notify({ title = 'Error', description = 'Invalid player or animal!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_player_or_animal'), type = 'error' })
         return
     end
     
@@ -1256,7 +1256,7 @@ RegisterNetEvent('rex-ranch:client:waterAnimal', function(data)
         LocalPlayer.state:set('inv_busy', false, true)
         isBusy = false
     else
-        lib.notify({type = 'error', description = 'You need water bucket to water the animals!'})
+        lib.notify({type = 'error', description = locale('need_water_bucket')})
     end
 end)
 
@@ -1266,43 +1266,43 @@ RegisterNetEvent('rex-ranch:client:checkProducts', function(data)
     local animal = data.animal
     
     if not DoesEntityExist(animal) or not animalid then
-        lib.notify({ title = 'Error', description = 'Invalid animal!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_animal'), type = 'error' })
         return
     end
     
     RSGCore.Functions.TriggerCallback('rex-ranch:server:getAnimalProductionStatus', function(productionData)
         if not productionData then
-            lib.notify({ title = 'No Production', description = 'This animal doesn\'t produce anything!', type = 'info' })
+            lib.notify({ title = locale('no_production'), description = locale('animal_no_production'), type = 'info' })
             return
         end
         
         local timeText = ''
         if productionData.hasProduct then
-            timeText = 'Ready to collect!'
+            timeText = locale('ready_to_collect')
         elseif productionData.canProduce then
             local hours = math.floor(productionData.timeUntilNext / 3600)
             local minutes = math.floor((productionData.timeUntilNext % 3600) / 60)
-            timeText = 'Next production in: ' .. hours .. 'h ' .. minutes .. 'm'
+            timeText = string.format(locale('next_production_in'), hours, minutes)
         else
-            timeText = 'Animal needs better care to produce'
+            timeText = locale('animal_needs_better_care')
         end
         
         local options = {
             {
-                title = 'Product Information',
-                description = 'Animal production details',
+                title = locale('product_information'),
+                description = locale('animal_production_details'),
                 icon = 'fa-solid fa-info-circle',
                 disabled = false
             },
             {
-                title = 'Product: ' .. productionData.productName,
-                description = 'This animal produces ' .. productionData.productAmount .. ' ' .. productionData.productName,
+                title = string.format(locale('product_title'), productionData.productName),
+                description = string.format(locale('animal_produces'), productionData.productAmount, productionData.productName),
                 icon = 'fa-solid fa-box',
                 disabled = false
             },
             {
-                title = 'Status: ' .. timeText,
-                description = productionData.canProduce and 'Animal meets production requirements' or 'Improve animal health, hunger, and thirst',
+                title = string.format(locale('status_title'), timeText),
+                description = productionData.canProduce and locale('animal_meets_production_requirements') or locale('improve_animal_stats'),
                 icon = productionData.hasProduct and 'fa-solid fa-check-circle' or 'fa-solid fa-clock',
                 disabled = false
             }
@@ -1311,11 +1311,11 @@ RegisterNetEvent('rex-ranch:client:checkProducts', function(data)
         if productionData.hasProduct then
             table.insert(options, {
                 title = '─────────────────────────',
-                disabled = true
+        disabled = true
             })
             table.insert(options, {
-                title = 'Collect ' .. productionData.productName,
-                description = 'Collect ' .. productionData.productAmount .. ' ' .. productionData.productName .. ' from this animal',
+                title = string.format(locale('collect_product'), productionData.productName),
+                description = string.format(locale('collect_product_desc'), productionData.productAmount, productionData.productName),
                 icon = 'fa-solid fa-hand-holding',
                 event = 'rex-ranch:client:collectProduct',
                 args = { animalid = animalid, animal = animal }
@@ -1324,7 +1324,7 @@ RegisterNetEvent('rex-ranch:client:checkProducts', function(data)
         
         lib.registerContext({
             id = 'animal_production_menu',
-            title = 'Animal Production',
+            title = locale('animal_production'),
             menu = 'animal_action_menu',
             options = options
         })
@@ -1338,7 +1338,7 @@ RegisterNetEvent('rex-ranch:client:collectProduct', function(data)
     local animalid = data.animalid
     
     if not DoesEntityExist(cache.ped) or not DoesEntityExist(animal) then
-        lib.notify({ title = 'Error', description = 'Invalid player or animal!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('invalid_player_or_animal'), type = 'error' })
         return
     end
     
@@ -1388,7 +1388,7 @@ RegisterCommand('cleanupranchanimals', function()
     end
     
     if isRanchStaff then
-        lib.notify({ title = 'Ranch Animals', description = 'Cleaning up orphaned animal entities...', type = 'info' })
+        lib.notify({ title = locale('ranch_animals'), description = locale('cleaning_orphaned_animals'), type = 'info' })
         
         -- Clear current tracked animals
         SpawnManager:ClearAll()
@@ -1399,9 +1399,9 @@ RegisterCommand('cleanupranchanimals', function()
         -- Refresh from server
         TriggerServerEvent('rex-ranch:server:refreshAnimals')
         
-        lib.notify({ title = 'Ranch Animals', description = 'Cleanup completed!', type = 'success' })
+        lib.notify({ title = locale('ranch_animals'), description = locale('cleanup_completed'), type = 'success' })
     else
-        lib.notify({ title = 'Ranch Animals', description = 'You must be ranch staff to use this command!', type = 'error' })
+        lib.notify({ title = locale('ranch_animals'), description = locale('must_be_ranch_staff_command'), type = 'error' })
     end
 end, false)
 
@@ -1421,17 +1421,17 @@ RegisterCommand('testproduction', function(source, args)
     end
     
     if not isRanchStaff then
-        lib.notify({ title = 'Error', description = 'You must be ranch staff to use this command!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('must_be_ranch_staff_command'), type = 'error' })
         return
     end
     
     local animalid = tonumber(args[1])
     if not animalid then
-        lib.notify({ title = 'Usage', description = '/testproduction [animalid]', type = 'info' })
+        lib.notify({ title = locale('usage'), description = locale('usage_testproduction'), type = 'info' })
         return
     end
     
-    lib.notify({ title = 'Testing', description = 'Testing production for animal ' .. animalid .. '...', type = 'info' })
+    lib.notify({ title = locale('testing'), description = string.format(locale('testing_production_animal'), animalid), type = 'info' })
     
     RSGCore.Functions.TriggerCallback('rex-ranch:server:getAnimalProductionStatus', function(productionData)
         if Config.Debug then
@@ -1448,13 +1448,13 @@ RegisterCommand('testproduction', function(source, args)
         end
         
         if not productionData then
-            lib.notify({ title = 'Test Result', description = 'No production data returned for animal ' .. animalid, type = 'error' })
+            lib.notify({ title = locale('test_result'), description = string.format(locale('no_production_data_animal'), animalid), type = 'error' })
         else
-            local status = productionData.hasProduct and 'Ready to collect!' or 
-                          productionData.canProduce and 'Can produce' or 'Cannot produce'
+            local status = productionData.hasProduct and locale('ready_to_collect') or
+                          productionData.canProduce and locale('can_produce') or locale('cannot_produce')
             lib.notify({ 
-                title = 'Test Result', 
-                description = 'Animal ' .. animalid .. ': ' .. productionData.productName .. ' - ' .. status, 
+                title = locale('test_result'), 
+                description = string.format(locale('test_result_desc'), animalid, productionData.productName, status), 
                 type = 'success' 
             })
         end
@@ -1474,8 +1474,8 @@ RegisterNetEvent('rex-ranch:client:findBreedingPartner', function(data)
     RSGCore.Functions.TriggerCallback('rex-ranch:server:getAvailableAnimalsForBreeding', function(availableAnimals)
         if not availableAnimals or #availableAnimals == 0 then
             lib.notify({ 
-                title = 'No Partners Available', 
-                description = 'No compatible breeding partners found!', 
+                title = locale('no_partners_available'), 
+                description = locale('no_compatible_partners'), 
                 type = 'info' 
             })
             return
@@ -1483,8 +1483,8 @@ RegisterNetEvent('rex-ranch:client:findBreedingPartner', function(data)
         
         local options = {
             {
-                title = 'Available Breeding Partners',
-                description = #availableAnimals .. ' animals found',
+                title = locale('available_breeding_partners'),
+                description = string.format(locale('animals_found'), #availableAnimals),
                 icon = 'fa-solid fa-list',
                 disabled = false
             },
@@ -1496,22 +1496,22 @@ RegisterNetEvent('rex-ranch:client:findBreedingPartner', function(data)
         
         for _, partner in ipairs(availableAnimals) do
             local genderIcon = partner.gender == 'male' and 'fa-solid fa-mars' or 'fa-solid fa-venus'
-            local healthStatus = partner.health > 80 and 'Excellent' or partner.health > 50 and 'Good' or 'Poor'
-            local description = 'Age: ' .. partner.age .. ' days, Health: ' .. healthStatus .. ' (' .. math.floor(partner.health) .. '%)\n'
-            description = description .. 'Distance: ' .. partner.distance .. 'm'
+            local healthStatus = partner.health > 80 and locale('health_excellent') or partner.health > 50 and locale('health_good') or locale('health_poor')
+            local description = string.format(locale('partner_age_health'), partner.age, healthStatus, math.floor(partner.health))
+            description = description .. string.format(locale('partner_distance'), partner.distance)
             
             if not partner.canBreed then
-                description = description .. '\nIssue: ' .. partner.breedingIssue
+                description = description .. string.format(locale('partner_issue'), partner.breedingIssue)
             end
             
             table.insert(options, {
-                title = partner.gender:gsub("^%l", string.upper) .. ' #' .. partner.animalid,
+                title = string.format(locale('partner_title'), partner.gender:gsub("^%l", string.upper), partner.animalid),
                 description = description,
                 icon = genderIcon,
                 metadata = {
-                    { label = 'Status', value = partner.canBreed and 'Ready' or 'Not Ready' },
-                    { label = 'Health', value = math.floor(partner.health) .. '%' },
-                    { label = 'Distance', value = partner.distance .. 'm' }
+                    { label = locale('status'), value = partner.canBreed and locale('ready') or locale('not_ready') },
+                    { label = locale('health'), value = string.format(locale('percent_value'), math.floor(partner.health)) },
+                    { label = locale('distance'), value = string.format(locale('meters_value'), partner.distance) }
                 },
                 disabled = not partner.canBreed,
                 event = partner.canBreed and 'rex-ranch:client:confirmBreeding' or nil,
@@ -1525,7 +1525,7 @@ RegisterNetEvent('rex-ranch:client:findBreedingPartner', function(data)
         
         lib.registerContext({
             id = 'breeding_partner_menu',
-            title = 'Select Breeding Partner',
+            title = locale('select_breeding_partner'),
             menu = 'animal_info_menu',
             options = options
         })
@@ -1541,10 +1541,8 @@ RegisterNetEvent('rex-ranch:client:confirmBreeding', function(data)
     local partner = data.partner
     
     local alert = lib.alertDialog({
-        header = 'Confirm Breeding',
-        content = 'Are you sure you want to breed these animals?\n\n' ..
-                 'Animal #' .. animal1id .. ' with Animal #' .. animal2id .. '\n\n' ..
-                 'Both animals will have a breeding cooldown afterward.',
+        header = locale('confirm_breeding'),
+        content = string.format(locale('confirm_breeding_content'), animal1id, animal2id),
         centered = true,
         cancel = true
     })
@@ -1558,7 +1556,7 @@ end)
 RegisterCommand('validatemenu', function(source, args)
     local Player = RSGCore.Functions.GetPlayerData()
     if not Player or not Player.job then
-        lib.notify({ title = 'Error', description = 'Player data not loaded!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('player_data_not_loaded'), type = 'error' })
         return
     end
     
@@ -1573,17 +1571,17 @@ RegisterCommand('validatemenu', function(source, args)
     end
     
     if not isRanchStaff then
-        lib.notify({ title = 'Error', description = 'You must be ranch staff to use this command!', type = 'error' })
+        lib.notify({ title = locale('error'), description = locale('must_be_ranch_staff_command'), type = 'error' })
         return
     end
     
     local animalid = tonumber(args[1])
     if not animalid then
-        lib.notify({ title = 'Usage', description = '/validatemenu [animalid] - Validates menu system for specific animal', type = 'info' })
+        lib.notify({ title = locale('usage'), description = locale('usage_validatemenu'), type = 'info' })
         return
     end
     
-    lib.notify({ title = 'Validating', description = 'Running menu validation for animal ' .. animalid .. '...', type = 'info' })
+    lib.notify({ title = locale('validating'), description = string.format(locale('validating_menu_animal'), animalid), type = 'info' })
     
     local validationResults = {}
     
@@ -1659,7 +1657,7 @@ RegisterCommand('validatemenu', function(source, args)
     CreateThread(function()
         for i, result in ipairs(validationResults) do
             lib.notify({ 
-                title = 'Validation ' .. i .. '/' .. #validationResults, 
+                title = string.format(locale('validation_step'), i, #validationResults), 
                 description = result,
                 type = string.find(result, '✅') and 'success' or string.find(result, '❌') and 'error' or 'info'
             })
@@ -1674,8 +1672,8 @@ RegisterCommand('validatemenu', function(source, args)
         end
         
         lib.notify({ 
-            title = 'Validation Complete', 
-            description = 'Passed ' .. passedChecks .. '/' .. #validationResults .. ' checks',
+            title = locale('validation_complete'), 
+            description = string.format(locale('validation_passed'), passedChecks, #validationResults),
             type = passedChecks == #validationResults and 'success' or 'info'
         })
     end)

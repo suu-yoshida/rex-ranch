@@ -5,8 +5,8 @@ RegisterNetEvent('rex-ranch:client:openranchhandmenu', function(ranchid)
     local herdingOption = {}
     if Config.HerdingEnabled then
         herdingOption = {
-            title = 'Animal Herding',
-            description = 'Herd animals by distance or type',
+            title = locale('animal_herding'),
+            description = locale('animal_herding_desc'),
             icon = 'fa-solid fa-paw',
             event = 'rex-ranch:client:openHerdingMenu',
             arrow = true
@@ -15,15 +15,15 @@ RegisterNetEvent('rex-ranch:client:openranchhandmenu', function(ranchid)
     
     local options = {
         {
-            title = 'Ranch Storage',
+            title = locale('ranch_storage'),
             icon = 'fa-solid fa-box',
             serverEvent = 'rex-ranch:server:ranchstorage',
             args = { ranchid = ranchid },
             arrow = true
         },
         {
-            title = 'Animal Overview',
-            description = 'View detailed animal statistics and status',
+            title = locale('animal_overview'),
+            description = locale('animal_overview_desc'),
             icon = 'fa-solid fa-list',
             event = 'rex-ranch:client:openAnimalOverview',
             args = ranchid,
@@ -37,7 +37,7 @@ RegisterNetEvent('rex-ranch:client:openranchhandmenu', function(ranchid)
     
     lib.registerContext({
         id = 'ranchhand_job_menu',
-        title = 'Rancher Menu',
+        title = locale('rancher_menu'),
         options = options
     })
     lib.showContext('ranchhand_job_menu')

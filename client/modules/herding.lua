@@ -14,7 +14,7 @@ lib.locale()
 ---------------------------------------------
 RegisterCommand('herd', function(source, args, rawCommand)
     if not Config.HerdingEnabled then
-        lib.notify({ title = 'Herding Disabled', description = 'Animal herding is currently disabled!', type = 'error' })
+        lib.notify({ title = locale('herding_disabled'), description = locale('herding_disabled_desc'), type = 'error' })
         return
     end
     
@@ -33,7 +33,7 @@ RegisterCommand('herd', function(source, args, rawCommand)
     end
     
     if not isRancher then
-        lib.notify({ title = 'Access Denied', description = 'You must be a rancher to use herding!', type = 'error' })
+        lib.notify({ title = locale('access_denied'), description = locale('must_be_rancher_herding'), type = 'error' })
         return
     end
     
@@ -41,7 +41,7 @@ RegisterCommand('herd', function(source, args, rawCommand)
     if Config.RequireHerdingTool then
         local hasItem = RSGCore.Functions.HasItem(Config.HerdingTool, 1)
         if not hasItem then
-            lib.notify({ title = 'Missing Tool', description = 'You need a ' .. Config.HerdingTool .. ' to herd animals!', type = 'error' })
+            lib.notify({ title = locale('missing_tool'), description = string.format(locale('need_tool_herd'), Config.HerdingTool), type = 'error' })
             return
         end
     end
@@ -65,17 +65,17 @@ RegisterNetEvent('rex-ranch:client:openHerdingMenu', function()
     if herdingActive then
         lib.registerContext({
             id = 'herding_active_menu',
-            title = 'Herding Control',
+            title = locale('herding_control'),
             options = {
                 {
-                    title = 'Stop Herding',
-                    description = 'Stop herding all animals (' .. #herdedAnimals .. ' animals)',
+                    title = locale('stop_herding'),
+                    description = string.format(locale('stop_herding_desc'), #herdedAnimals),
                     icon = 'fa-solid fa-stop',
                     event = 'rex-ranch:client:stopHerding'
                 },
                 {
-                    title = 'Herding Status',
-                    description = 'Currently herding ' .. #herdedAnimals .. ' animals',
+                    title = locale('herding_status'),
+                    description = string.format(locale('currently_herding_count'), #herdedAnimals),
                     icon = 'fa-solid fa-info',
                     disabled = true
                 }
@@ -85,14 +85,14 @@ RegisterNetEvent('rex-ranch:client:openHerdingMenu', function()
     else
         local options = {
             {
-                title = 'Herd by Distance',
-                description = 'Herd all animals within ' .. Config.HerdingDistance .. ' units',
+                title = locale('herd_by_distance'),
+                description = string.format(locale('herd_by_distance_desc'), Config.HerdingDistance),
                 icon = 'fa-solid fa-location-dot',
                 event = 'rex-ranch:client:startDistanceHerding'
             },
             {
-                title = 'Herd by Type',
-                description = 'Select animals by type to herd',
+                title = locale('herd_by_type'),
+                description = locale('herd_by_type_desc'),
                 icon = 'fa-solid fa-filter',
                 event = 'rex-ranch:client:showTypeMenu',
                 arrow = true
@@ -102,8 +102,8 @@ RegisterNetEvent('rex-ranch:client:openHerdingMenu', function()
         -- Add individual selection option if enabled
         if Config.IndividualSelectionEnabled then
             table.insert(options, {
-                title = 'Select Individual Animals',
-                description = 'Choose specific animals to herd',
+                title = locale('select_individual_animals'),
+                description = locale('select_individual_animals_desc'),
                 icon = 'fa-solid fa-hand-pointer',
                 event = 'rex-ranch:client:showIndividualSelectionMenu',
                 arrow = true
@@ -112,7 +112,7 @@ RegisterNetEvent('rex-ranch:client:openHerdingMenu', function()
         
         lib.registerContext({
             id = 'herding_menu',
-            title = 'Animal Herding',
+            title = locale('animal_herding'),
             options = options
         })
         lib.showContext('herding_menu')
@@ -141,8 +141,8 @@ RegisterNetEvent('rex-ranch:client:showTypeMenu', function()
     for model, _ in pairs(animalTypes) do
         local displayName = GetAnimalDisplayName(model)
         table.insert(options, {
-            title = 'Herd ' .. displayName .. 's',
-            description = typeCounts[model] .. ' ' .. displayName .. '(s) nearby',
+            title = string.format(locale('herd_animals_by_name'), displayName),
+            description = string.format(locale('animals_nearby_by_name'), typeCounts[model], displayName),
             icon = 'fa-solid fa-paw',
             event = 'rex-ranch:client:startTypeHerding',
             args = { animalType = model }
@@ -151,8 +151,8 @@ RegisterNetEvent('rex-ranch:client:showTypeMenu', function()
     
     if #options == 0 then
         table.insert(options, {
-            title = 'No Animals Found',
-            description = 'No animals within herding range',
+            title = locale('no_animals_found'),
+            description = locale('no_animals_herding_range'),
             icon = 'fa-solid fa-exclamation-triangle',
             disabled = true
         })
@@ -160,7 +160,7 @@ RegisterNetEvent('rex-ranch:client:showTypeMenu', function()
     
     lib.registerContext({
         id = 'herding_type_menu',
-        title = 'Select Animal Type',
+        title = locale('select_animal_type'),
         menu = 'herding_menu',
         options = options
     })
@@ -174,7 +174,7 @@ RegisterNetEvent('rex-ranch:client:showIndividualSelectionMenu', function()
     local nearbyAnimals = GetNearbyAnimals()
     
     if #nearbyAnimals == 0 then
-        lib.notify({ title = 'No Animals', description = 'No animals found within selection range!', type = 'error' })
+        lib.notify({ title = locale('no_animals'), description = locale('no_animals_selection_range'), type = 'error' })
         return
     end
     
@@ -187,23 +187,23 @@ RegisterNetEvent('rex-ranch:client:showIndividualSelectionMenu', function()
     end
     
     table.insert(options, {
-        title = 'Selected Animals: ' .. selectedCount,
-        description = 'Currently selected ' .. selectedCount .. ' animals for herding',
+        title = string.format(locale('selected_animals_count'), selectedCount),
+        description = string.format(locale('currently_selected_count'), selectedCount),
         icon = 'fa-solid fa-list-check',
         disabled = true
     })
     
     if selectedCount > 0 then
         table.insert(options, {
-            title = 'Start Herding Selected',
-            description = 'Begin herding the ' .. selectedCount .. ' selected animals',
+            title = locale('start_herding_selected'),
+            description = string.format(locale('start_selected_desc'), selectedCount),
             icon = 'fa-solid fa-play',
             event = 'rex-ranch:client:startSelectedHerding'
         })
         
         table.insert(options, {
-            title = 'Clear Selection',
-            description = 'Deselect all animals',
+            title = locale('clear_selection'),
+            description = locale('clear_selection_desc'),
             icon = 'fa-solid fa-times',
             event = 'rex-ranch:client:clearAnimalSelection'
         })
@@ -221,12 +221,12 @@ RegisterNetEvent('rex-ranch:client:showIndividualSelectionMenu', function()
         local distance = math.floor(animalData.distance * 10) / 10
         
         local statusIcon = isSelected and 'fa-solid fa-check-square' or 'fa-regular fa-square'
-        local statusText = isSelected and '[SELECTED]' or '[NOT SELECTED]'
+        local statusText = isSelected and locale('selected_bracket') or locale('not_selected_bracket')
         
         -- Build description based on config
-        local description = 'Click to toggle selection'
+        local description = locale('toggle_selection_desc')
         if Config.ShowAnimalDistance then
-            description = 'Distance: ' .. distance .. 'm - ' .. description
+            description = string.format(locale('distance_prefix_desc'), distance, description)
         end
         
         table.insert(options, {
@@ -243,7 +243,7 @@ RegisterNetEvent('rex-ranch:client:showIndividualSelectionMenu', function()
     
     lib.registerContext({
         id = 'herding_individual_menu',
-        title = 'Select Animals to Herd',
+        title = locale('select_animals_to_herd'),
         menu = 'herding_menu',
         options = options
     })
@@ -261,8 +261,8 @@ RegisterNetEvent('rex-ranch:client:toggleAnimalSelection', function(data)
         -- Deselect animal
         selectedAnimals[animalId] = nil
         lib.notify({ 
-            title = 'Animal Deselected', 
-            description = 'Removed ' .. GetAnimalDisplayName(animalData.model) .. ' from selection',
+            title = locale('animal_deselected'), 
+            description = string.format(locale('removed_animal_selection'), GetAnimalDisplayName(animalData.model)),
             type = 'info'
         })
     else
@@ -274,8 +274,8 @@ RegisterNetEvent('rex-ranch:client:toggleAnimalSelection', function(data)
         
         if selectedCount >= Config.HerdingMaxAnimals then
             lib.notify({ 
-                title = 'Selection Full', 
-                description = 'Maximum ' .. Config.HerdingMaxAnimals .. ' animals can be selected',
+                title = locale('selection_full'), 
+                description = string.format(locale('max_animals_selected'), Config.HerdingMaxAnimals),
                 type = 'error'
             })
             TriggerEvent('rex-ranch:client:showIndividualSelectionMenu') -- Refresh menu
@@ -285,8 +285,8 @@ RegisterNetEvent('rex-ranch:client:toggleAnimalSelection', function(data)
         -- Select animal
         selectedAnimals[animalId] = animalData
         lib.notify({ 
-            title = 'Animal Selected', 
-            description = 'Added ' .. GetAnimalDisplayName(animalData.model) .. ' to selection',
+            title = locale('animal_selected'), 
+            description = string.format(locale('added_animal_selection'), GetAnimalDisplayName(animalData.model)),
             type = 'success'
         })
     end
@@ -307,8 +307,8 @@ RegisterNetEvent('rex-ranch:client:clearAnimalSelection', function()
     selectedAnimals = {}
     
     lib.notify({ 
-        title = 'Selection Cleared', 
-        description = 'Removed ' .. clearedCount .. ' animals from selection',
+        title = locale('selection_cleared'), 
+        description = string.format(locale('removed_animals_selection_count'), clearedCount),
         type = 'info'
     })
     
@@ -321,7 +321,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rex-ranch:client:startSelectedHerding', function()
     if herdingActive then
-        lib.notify({ title = 'Already Herding', description = 'Stop current herding session first!', type = 'error' })
+        lib.notify({ title = locale('already_herding'), description = locale('stop_current_herding_first'), type = 'error' })
         return
     end
     
@@ -342,7 +342,7 @@ RegisterNetEvent('rex-ranch:client:startSelectedHerding', function()
     end
     
     if selectedCount == 0 then
-        lib.notify({ title = 'No Valid Animals', description = 'No selected animals are available for herding!', type = 'error' })
+        lib.notify({ title = locale('no_valid_animals'), description = locale('no_selected_animals_available'), type = 'error' })
         selectedAnimals = {} -- Clear invalid selections
         return
     end
@@ -358,18 +358,18 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rex-ranch:client:startDistanceHerding', function()
     if herdingActive then
-        lib.notify({ title = 'Already Herding', description = 'Stop current herding session first!', type = 'error' })
+        lib.notify({ title = locale('already_herding'), description = locale('stop_current_herding_first'), type = 'error' })
         return
     end
     
     local nearbyAnimals = GetNearbyAnimals()
     if #nearbyAnimals == 0 then
-        lib.notify({ title = 'No Animals', description = 'No animals found within herding distance!', type = 'error' })
+        lib.notify({ title = locale('no_animals'), description = locale('no_animals_herding_distance'), type = 'error' })
         return
     end
     
     if #nearbyAnimals > Config.HerdingMaxAnimals then
-        lib.notify({ title = 'Too Many Animals', description = 'Found ' .. #nearbyAnimals .. ' animals, max is ' .. Config.HerdingMaxAnimals, type = 'error' })
+        lib.notify({ title = locale('too_many_animals'), description = string.format(locale('found_animals_max'), #nearbyAnimals, Config.HerdingMaxAnimals), type = 'error' })
         return
     end
     
@@ -381,7 +381,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rex-ranch:client:startTypeHerding', function(data)
     if herdingActive then
-        lib.notify({ title = 'Already Herding', description = 'Stop current herding session first!', type = 'error' })
+        lib.notify({ title = locale('already_herding'), description = locale('stop_current_herding_first'), type = 'error' })
         return
     end
     
@@ -395,12 +395,12 @@ RegisterNetEvent('rex-ranch:client:startTypeHerding', function(data)
     end
     
     if #filteredAnimals == 0 then
-        lib.notify({ title = 'No Animals', description = 'No animals of this type found nearby!', type = 'error' })
+        lib.notify({ title = locale('no_animals'), description = locale('no_animals_type_nearby'), type = 'error' })
         return
     end
     
     if #filteredAnimals > Config.HerdingMaxAnimals then
-        lib.notify({ title = 'Too Many Animals', description = 'Found ' .. #filteredAnimals .. ' animals, max is ' .. Config.HerdingMaxAnimals, type = 'error' })
+        lib.notify({ title = locale('too_many_animals'), description = string.format(locale('found_animals_max'), #filteredAnimals, Config.HerdingMaxAnimals), type = 'error' })
         return
     end
     
@@ -451,8 +451,8 @@ RegisterNetEvent('rex-ranch:client:stopHerding', function()
     selectedAnimals = {}
     
     lib.notify({ 
-        title = 'Herding Stopped', 
-        description = 'Released ' .. animalCount .. ' animals from herding', 
+        title = locale('herding_stopped'), 
+        description = string.format(locale('released_animals_herding'), animalCount), 
         type = 'success' 
     })
 end)
@@ -604,10 +604,10 @@ end
 
 function GetAnimalDisplayName(model)
     local displayNames = {
-        ['a_c_cow'] = 'Cow',
-        ['a_c_bull_01'] = 'Bull'
+        ['a_c_cow'] = locale('animal_cow'),
+        ['a_c_bull_01'] = locale('animal_bull')
     }
-    return displayNames[model] or 'Animal'
+    return displayNames[model] or locale('animal_generic')
 end
 
 ---------------------------------------------
@@ -641,16 +641,16 @@ function StartHerding(animals, herdType)
     local animalCount = #animals
     local typeText
     if herdType == 'distance' then
-        typeText = 'nearby'
+        typeText = locale('herd_type_nearby')
     elseif herdType == 'selected' then
-        typeText = 'selected'
+        typeText = locale('herd_type_selected')
     else
-        typeText = 'selected type'
+        typeText = locale('herd_type_selected_type')
     end
     
     lib.notify({ 
-        title = 'Herding Started', 
-        description = 'Now herding ' .. animalCount .. ' ' .. typeText .. ' animals', 
+        title = locale('herding_started'), 
+        description = string.format(locale('now_herding_animals'), animalCount, typeText), 
         type = 'success',
         duration = 5000
     })
@@ -670,7 +670,7 @@ function StartHerding(animals, herdType)
             -- Check timeout
             if herdingStartTime and (GetGameTimer() - herdingStartTime) > (Config.HerdingTimeout * 1000) then
                 TriggerEvent('rex-ranch:client:stopHerding')
-                lib.notify({ title = 'Herding Timeout', description = 'Herding session ended automatically', type = 'info' })
+                lib.notify({ title = locale('herding_timeout'), description = locale('herding_timeout_desc'), type = 'info' })
                 break
             end
             
@@ -686,8 +686,8 @@ function StartHerding(animals, herdType)
     
     -- Show herding instructions
     lib.notify({
-        title = 'Herding Active',
-        description = 'Use /herd to stop herding. Animals will follow you.',
+        title = locale('herding_active'),
+        description = locale('herding_active_desc'),
         type = 'info',
         duration = 8000
     })
@@ -734,7 +734,7 @@ function UpdateHerdingMovement()
     
     if remainingAnimals == 0 then
         TriggerEvent('rex-ranch:client:stopHerding')
-        lib.notify({ title = 'No Animals Left', description = 'All herded animals are gone', type = 'info' })
+        lib.notify({ title = locale('no_animals_left'), description = locale('all_herded_animals_gone'), type = 'info' })
     end
 end
 
@@ -760,11 +760,11 @@ RegisterCommand('herdselectstatus', function()
     end
     
     if selectedCount == 0 then
-        lib.notify({ title = 'No Selection', description = 'No animals currently selected for herding', type = 'info' })
+        lib.notify({ title = locale('no_selection'), description = locale('no_animals_selected_herding'), type = 'info' })
     else
         lib.notify({ 
-            title = 'Selection Status', 
-            description = selectedCount .. ' animals selected for herding',
+            title = locale('selection_status'), 
+            description = string.format(locale('selected_animals_herding'), selectedCount),
             type = 'info',
             duration = 3000
         })
@@ -782,12 +782,12 @@ RegisterCommand('herdclear', function()
     if clearedCount > 0 then
         selectedAnimals = {}
         lib.notify({ 
-            title = 'Selection Cleared', 
-            description = 'Cleared ' .. clearedCount .. ' selected animals',
+            title = locale('selection_cleared'), 
+            description = string.format(locale('cleared_selected_animals'), clearedCount),
             type = 'success'
         })
     else
-        lib.notify({ title = 'No Selection', description = 'No animals were selected', type = 'info' })
+        lib.notify({ title = locale('no_selection'), description = locale('no_animals_were_selected'), type = 'info' })
     end
 end, false)
 
