@@ -1136,7 +1136,7 @@ RegisterNetEvent('rex-ranch:client:actionsmenu', function(data)
             },
             {
                 title = '─────────────────────────',
-        disabled = true
+                disabled = true
             },
             {
                 title = string.format(locale('feed_animal_status'), hungerStatus),
@@ -1154,7 +1154,7 @@ RegisterNetEvent('rex-ranch:client:actionsmenu', function(data)
             },
             {
                 title = '─────────────────────────',
-        disabled = true
+                disabled = true
             },
             {
                 title = locale('check_products'),
@@ -1311,7 +1311,7 @@ RegisterNetEvent('rex-ranch:client:checkProducts', function(data)
         if productionData.hasProduct then
             table.insert(options, {
                 title = '─────────────────────────',
-        disabled = true
+                disabled = true
             })
             table.insert(options, {
                 title = string.format(locale('collect_product'), productionData.productName),

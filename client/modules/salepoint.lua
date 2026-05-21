@@ -229,7 +229,7 @@ RegisterNetEvent('rex-ranch:client:openSaleMenu', function(salePointData)
                 
                 table.insert(options, {
                     title = '─────────────────────────',
-                disabled = true
+                    disabled = true
                 })
             end
         end
